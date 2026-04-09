@@ -9,7 +9,7 @@ import SecondaryText from "../shared/SecondaryText";
 export default function HeroSection(){
     return (
         <div className="w-full flex flex-col items-center relative min-h-screen overflow-hidden pt-20">
-            <div className="fixed inset-0 w-full h-full pointer-events-none animate-pulse" style={{background: 'radial-gradient(circle at center, rgba(34, 197, 94, 0.08) 0%, transparent 90%)', animationDuration: '4s'}}></div>
+            {/* <div className="fixed inset-0 w-full h-full pointer-events-none" style={{background: 'radial-gradient(circle at center, rgba(34, 197, 94, 0.08) 0%, transparent 90%)'}}></div> */}
 
             
 
