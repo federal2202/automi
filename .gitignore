@@ -33,6 +33,7 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 CLAUDE.md
+/.claude
 
 # vercel
 .vercel
@@ -40,3 +41,5 @@ CLAUDE.md
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+system_design.md
