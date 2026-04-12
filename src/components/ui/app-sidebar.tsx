@@ -1,5 +1,6 @@
 "use client"
 
+import Logo from "../shared/Logo"
 import { 
   Sidebar, 
   SidebarContent, 
@@ -10,113 +11,56 @@ import {
   SidebarHeader, 
   SidebarMenu,
   SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarSeparator
+  SidebarMenuItem
 } from "./sidebar"
 import { 
-  Home, 
-  BarChart3, 
-  Users, 
-  Settings, 
-  FileText, 
   Calendar,
-  Mail,
-  HelpCircle,
-  LogOut 
+  CheckSquare,
+  BarChart3,
+  ChevronRight
 } from "lucide-react"
 
 export default function AppSidebar(){
     const navigationItems = [
-      {
-        title: "Dashboard",
-        icon: Home,
-        url: "/dashboard"
-      },
-      {
-        title: "Analytics", 
-        icon: BarChart3,
-        url: "/dashboard/analytics"
-      },
-      {
-        title: "Users",
-        icon: Users,
-        url: "/dashboard/users"
-      },
-      {
-        title: "Documents",
-        icon: FileText,
-        url: "/dashboard/documents"
-      },
       {
         title: "Calendar",
         icon: Calendar,
         url: "/dashboard/calendar"
       },
       {
-        title: "Messages",
-        icon: Mail,
-        url: "/dashboard/messages"
-      }
-    ]
-
-    const secondaryItems = [
-      {
-        title: "Settings",
-        icon: Settings,
-        url: "/dashboard/settings"
+        title: "Tasks", 
+        icon: CheckSquare,
+        url: "/dashboard/tasks"
       },
       {
-        title: "Help",
-        icon: HelpCircle,
-        url: "/dashboard/help"
+        title: "Overview",
+        icon: BarChart3,
+        url: "/dashboard/overview"
       }
     ]
 
     return (
-        <Sidebar>
-            <SidebarHeader>
-              <div className="flex items-center gap-2 px-2 py-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
-                  <span className="font-bold text-sm">A</span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-sm font-semibold">Automi</span>
-                  <span className="text-xs text-muted-foreground">Dashboard</span>
-                </div>
-              </div>
+        <Sidebar className="border-r border-gray-200">
+            <SidebarHeader className="p-4 outline-none ring-0 ">
+              <Logo />
             </SidebarHeader>
 
-            <SidebarContent>
+            <SidebarContent className="px-3 py-4">
                 <SidebarGroup>
-                  <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+                  <SidebarGroupLabel className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3 px-3">
+                    Platform
+                  </SidebarGroupLabel>
                   <SidebarGroupContent>
-                    <SidebarMenu>
+                    <SidebarMenu className="space-y-1">
                       {navigationItems.map((item) => (
                         <SidebarMenuItem key={item.title}>
-                          <SidebarMenuButton asChild>
+                          <SidebarMenuButton asChild className="h-9 px-3 rounded-lg hover:bg-gray-100 text-gray-700 hover:text-gray-900 flex items-center justify-between group">
                             <a href={item.url}>
-                              <item.icon className="w-4 h-4" />
-                              <span>{item.title}</span>
-                            </a>
-                          </SidebarMenuButton>
-                        </SidebarMenuItem>
-                      ))}
-                    </SidebarMenu>
-                  </SidebarGroupContent>
-                </SidebarGroup>
-
-                <SidebarSeparator className="bg-neutral-800 border-neutral-800" />
-
-                <SidebarGroup>
-                  <SidebarGroupLabel>Account</SidebarGroupLabel>
-                  <SidebarGroupContent>
-                    <SidebarMenu>
-                      {secondaryItems.map((item) => (
-                        <SidebarMenuItem key={item.title}>
-                          <SidebarMenuButton asChild>
-                            <a href={item.url}>
-                              <item.icon className="w-4 h-4" />
-                              <span>{item.title}</span>
+                              <div className="flex items-center gap-3">
+                                <item.icon className="w-4 h-4" />
+                                <span className="text-sm font-medium">{item.title}</span>
+                              </div>
+                              <ChevronRight className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                             </a>
                           </SidebarMenuButton>
                         </SidebarMenuItem>
@@ -126,15 +70,17 @@ export default function AppSidebar(){
                 </SidebarGroup>
             </SidebarContent>
 
-            <SidebarFooter>
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton>
-                    <LogOut className="w-4 h-4" />
-                    <span>Sign Out</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
+            <SidebarFooter className="p-4 border-t border-gray-200">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-sm font-medium">
+                  S
+                </div>
+                <div className="flex flex-col min-w-0 flex-1">
+                  <span className="text-sm font-medium text-gray-900 truncate">shadcn</span>
+                  <span className="text-xs text-gray-500 truncate">m@example.com</span>
+                </div>
+                <ChevronRight className="w-4 h-4 text-gray-400" />
+              </div>
             </SidebarFooter>
         </Sidebar>
     )

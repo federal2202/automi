@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import Button from './shared/Button';
+import Logo from './shared/Logo';
 
 
 
@@ -11,11 +12,7 @@ export default function Navbar(){
     <nav className='w-full max-w-[600px] h-[50px] flex items-center justify-between px-3 lg:px-4 py-3 bg-[#ffffff]/2 border-[1px] mt-4 mx-4 md:mx-0 border-[#ffffff]/10 rounded-[30px] animate-fade-in-down backdrop-blur-sm transition-all duration-300 hover:bg-[#ffffff]/5 hover:border-[#ffffff]/20'>
       <div className='flex items-center gap-1 animate-slide-in-left' style={{animationDelay: '0.1s'}}>
         <div className='w-2 h-2 bg-green-nice rounded-[50%] animate-pulse' style={{animationDuration: '2s'}}/>
-        <Link href="/">
-          <span className='text-[18px] md:text-[20px] font-bold text-white transition-all duration-300 hover:text-green-nice'>
-            automi.
-          </span>
-        </Link>
+        <Logo />
       </div>
       <div className='hidden sm:flex items-center justify-between max-w-[220px] w-full animate-fade-in-up' style={{animationDelay: '0.3s'}}>
         <Link href="/features">

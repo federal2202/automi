@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans } from "next/font/google";
+import { Plus_Jakarta_Sans, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 
 const jakartaSans = Plus_Jakarta_Sans({
@@ -7,6 +7,15 @@ const jakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
   weight: ["200", "300", "400", "500", "600", "700", "800"],
 });
+
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-space-grotesk",
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+});
+
+// Export fonts for use in other components
+export { jakartaSans, spaceGrotesk };
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -21,7 +30,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${jakartaSans.variable} h-full antialiased`}
+      className={`${jakartaSans.variable} ${spaceGrotesk.variable} h-full antialiased`}
     >
       <body className={`${jakartaSans.className} min-h-full bg-background`}>
         {children}
