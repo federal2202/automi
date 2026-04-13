@@ -11,7 +11,6 @@ import {
   SidebarGroupContent,
   SidebarHeader, 
   SidebarMenu,
-  SidebarMenuButton,
   SidebarMenuItem
 } from "./sidebar"
 import { 
@@ -31,7 +30,7 @@ export default function AppSidebar(){
       {
         title: "Calendar",
         icon: Calendar,
-        url: "/dashboard/calendar",
+        url: "/dashboard",
         isActive: true
       },
       {
