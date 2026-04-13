@@ -18,10 +18,10 @@ interface CalendarEvent {
   description?: string
 }
 
-// Generate sample events for the current week
+// Generate sample events for the current week (timezone-aware)
 const generateSampleEvents = (): CalendarEvent[] => {
-  const now = new Date()
-  const currentWeekStart = moment(now).startOf('week')
+  const now = moment() // Uses local timezone automatically
+  const currentWeekStart = now.clone().startOf('week')
   
   return [
     {
@@ -118,6 +118,19 @@ export default function WeeklyCalendar({ className }: WeeklyCalendarProps) {
   const [view, setView] = useState<View>(Views.WORK_WEEK)
   const sampleEvents = generateSampleEvents() // Generate events for current week
 
+  const getAvailableViews = () => {
+    return [Views.DAY, Views.WORK_WEEK, Views.MONTH]
+  }
+
+  const getViewLabel = (viewType: View) => {
+    switch (viewType) {
+      case Views.DAY: return 'DAY'
+      case Views.WORK_WEEK: return 'WEEK' 
+      case Views.MONTH: return 'MONTH'
+      default: return 'WEEK'
+    }
+  }
+
   const CustomEvent = ({ event }: { event: CalendarEvent }) => {
     const getEventStyles = (type: string) => {
       switch (type) {
@@ -134,21 +147,6 @@ export default function WeeklyCalendar({ className }: WeeklyCalendarProps) {
       }
     }
 
-    const getTimeColor = (type: string) => {
-      switch (type) {
-        case 'primary':
-          return 'text-[#059669]'
-        case 'secondary':
-          return 'text-[#ddb7ff]'
-        case 'critical':
-          return 'text-[#a7f3d0]'
-        case 'inactive':
-          return 'text-[#6b7280]'
-        default:
-          return 'text-[#059669]'
-      }
-    }
-
     const formatTime = (date: Date) => {
       return moment(date).format('HH:mm')
     }
@@ -158,10 +156,7 @@ export default function WeeklyCalendar({ className }: WeeklyCalendarProps) {
         "w-full h-full rounded-2xl p-4 flex flex-col gap-1",
         getEventStyles(event.type)
       )}>
-        <div className={cn(
-          "text-[10px] font-bold tracking-wide uppercase font-['Plus_Jakarta_Sans']",
-          getTimeColor(event.type)
-        )}>
+        <div className="text-[10px] font-bold tracking-wide uppercase text-[#059669]">
           {event.id === '5' ? 'NOW - 13:00' : `${formatTime(event.start)} - ${formatTime(event.end)}`}
         </div>
         <div className={cn(
@@ -184,38 +179,81 @@ export default function WeeklyCalendar({ className }: WeeklyCalendarProps) {
   }
 
   const CustomToolbar = () => {
+    const navigateCalendar = (direction: 'prev' | 'next') => {
+      const amount = direction === 'prev' ? -1 : 1
+      let unit: moment.unitOfTime.DurationConstructor = 'week'
+      
+      if (view === Views.DAY) unit = 'day'
+      else if (view === Views.MONTH) unit = 'month'
+      
+      setCurrentDate(moment(currentDate).add(amount, unit).toDate())
+    }
+
+    const getTitle = () => {
+      switch (view) {
+        case Views.DAY:
+          return 'DAILY MANIFEST'
+        case Views.MONTH:
+          return 'MONTHLY MANIFEST'
+        default:
+          return 'WEEKLY MANIFEST'
+      }
+    }
+
     return (
       <>
-        {/* Title Section Only */}
-        <div className="flex flex-col gap-2 mb-8">
-          <div className="flex items-center justify-between">
+        {/* Title Section with View Controls */}
+        <div className="flex flex-col gap-4 mb-8">
+          {/* Mobile: Stack vertically, Desktop: Side by side */}
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div className="flex flex-col">
-              <h1 className="text-[48px] font-bold text-[#e5e2e1] tracking-[-2.4px] uppercase leading-[48px] font-['Space_Grotesk']">
-                WEEKLY MANIFEST
+              <h1 className="text-2xl md:text-3xl lg:text-[48px] font-bold text-[#e5e2e1] tracking-[-2.4px] uppercase leading-tight font-['Space_Grotesk']">
+                {getTitle()}
               </h1>
-              <p className="text-[11px] text-[#6b7280] tracking-[1.1px] uppercase font-['Plus_Jakarta_Sans']">
+              <p className="text-[10px] md:text-[11px] text-[#6b7280] tracking-[1.1px] uppercase font-['Plus_Jakarta_Sans']">
                 PRECISION SCHEDULING PROTOCOL // CLUSTER 09-ALPHA
               </p>
             </div>
             
-            {/* Calendar Navigation */}
-            <div className="flex items-center gap-4">
+            {/* Controls: Date + Navigation + View Switcher */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
+              {/* Date Display */}
               <div className="text-[11px] text-[#10b981] font-['Plus_Jakarta_Sans'] whitespace-nowrap">
                 {moment(currentDate).format('MMMM YYYY').toUpperCase()}
               </div>
+              
+              {/* Navigation */}
               <div className="bg-[#0e0e0e] border border-[rgba(59,75,53,0.15)] rounded-full flex items-center p-[3px]">
                 <button 
-                  onClick={() => setCurrentDate(moment(currentDate).subtract(1, 'week').toDate())}
+                  onClick={() => navigateCalendar('prev')}
                   className="p-1 hover:bg-[rgba(59,75,53,0.2)] rounded-full transition-colors"
                 >
                   <ChevronLeft className="w-3 h-3 text-white" />
                 </button>
                 <button 
-                  onClick={() => setCurrentDate(moment(currentDate).add(1, 'week').toDate())}
+                  onClick={() => navigateCalendar('next')}
                   className="p-1 hover:bg-[rgba(59,75,53,0.2)] rounded-full transition-colors"
                 >
                   <ChevronRight className="w-3 h-3 text-white" />
                 </button>
+              </div>
+
+              {/* View Switcher */}
+              <div className="bg-[#0e0e0e] border border-[rgba(59,75,53,0.15)] rounded-full flex items-center p-[2px]">
+                {getAvailableViews().map((viewType) => (
+                  <button
+                    key={viewType}
+                    onClick={() => setView(viewType)}
+                    className={cn(
+                      "px-3 py-1 text-[10px] font-bold tracking-wide uppercase transition-all duration-200 rounded-full",
+                      view === viewType
+                        ? "bg-[#059669] text-white"
+                        : "text-[#6b7280] hover:text-white hover:bg-[rgba(59,75,53,0.2)]"
+                    )}
+                  >
+                    {getViewLabel(viewType)}
+                  </button>
+                ))}
               </div>
             </div>
           </div>
@@ -229,20 +267,53 @@ export default function WeeklyCalendar({ className }: WeeklyCalendarProps) {
     const dayNumber = moment(date).format('D')
     const dayName = label.toUpperCase()
 
+    // For day view, show full day info prominently
+    if (view === Views.DAY) {
+      return (
+        <div className={cn(
+          "flex flex-col pb-6 mb-4 bg-[rgba(2,44,34,0.08)] border border-[rgba(6,78,59,0.15)] rounded-3xl px-4 py-3 -mx-2"
+        )}>
+          <div className={cn(
+            "flex flex-col items-center gap-1 pb-3 border-b border-solid border-[rgba(6,78,59,0.3)]"
+          )}>
+            <div className={cn(
+              "text-[14px] font-bold tracking-[1.1px] uppercase font-['Plus_Jakarta_Sans'] text-[#059669]"
+            )}>
+              {moment(date).format('dddd')} {/* Full day name */}
+            </div>
+            <div className={cn(
+              "text-[32px] leading-8 font-['Space_Grotesk'] text-[#059669] font-bold"
+            )}>
+              {moment(date).format('MMMM D, YYYY')} {/* Full date */}
+            </div>
+            {isToday && (
+              <div className="text-[10px] font-bold tracking-[1.1px] uppercase font-['Plus_Jakarta_Sans'] text-[#a7f3d0] mt-1">
+                TODAY
+              </div>
+            )}
+          </div>
+        </div>
+      )
+    }
+
+    // Original header for week/month views
     return (
       <div className={cn(
         "flex flex-col pb-4",
-        isToday && "bg-[rgba(2,44,34,0.05)] border border-[rgba(6,78,59,0.1)] rounded-3xl px-3 py-1 -mx-2"
+        isToday && "bg-[rgba(2,44,34,0.08)] border border-[rgba(6,78,59,0.2)] rounded-3xl px-3 py-2 -mx-2"
       )}>
         <div className={cn(
           "flex items-baseline justify-between pb-2 border-b border-solid pb-[9px]",
-          isToday ? "border-[rgba(6,78,59,0.3)] text-[#059669] font-bold" : "border-[rgba(59,75,53,0.15)]"
+          isToday ? "border-[rgba(6,78,59,0.4)]" : "border-[rgba(59,75,53,0.15)]"
         )}>
           <div className={cn(
             "text-[11px] font-bold tracking-[1.1px] uppercase font-['Plus_Jakarta_Sans']",
             isToday ? "text-[#059669]" : "text-[#6b7280]"
           )}>
             {dayName}
+            {isToday && (
+              <span className="block text-[8px] text-[#a7f3d0] mt-0.5">TODAY</span>
+            )}
           </div>
           <div className={cn(
             "text-[24px] leading-8 font-['Space_Grotesk']",
@@ -256,15 +327,16 @@ export default function WeeklyCalendar({ className }: WeeklyCalendarProps) {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const eventStyleGetter = (_event: CalendarEvent) => {
+  const eventStyleGetter = (event: CalendarEvent) => {
     return {
       style: {
         backgroundColor: 'transparent',
         border: 'none',
         padding: 0,
         height: 'auto',
-        minHeight: '120px'
-      }
+        minHeight: view === Views.MONTH ? '6px' : '120px'
+      },
+      className: `event-type-${event.type}`
     }
   }
 
@@ -278,17 +350,20 @@ export default function WeeklyCalendar({ className }: WeeklyCalendarProps) {
   }
 
   return (
-    <div className={cn("bg-[#0e0e0e] text-white h-full p-8", className)}>
-      <div className="max-w-full mx-auto">
+    <div className={cn("bg-[#0e0e0e] text-white h-full w-full flex flex-col p-4 md:p-6 lg:p-8", className)}>
+      <div className="w-full flex-1 flex flex-col min-h-0 min-w-0">
         <BigCalendar
           localizer={localizer}
           events={sampleEvents}
           startAccessor="start"
           endAccessor="end"
-          style={{ height: 'calc(100vh - 160px)' }}
+          style={{ 
+            height: '100%',
+            minHeight: '400px'
+          }}
           view={view}
           onView={setView}
-          views={[Views.WORK_WEEK]}
+          views={getAvailableViews()}
           date={currentDate}
           onNavigate={setCurrentDate}
           components={{
@@ -296,24 +371,48 @@ export default function WeeklyCalendar({ className }: WeeklyCalendarProps) {
             toolbar: CustomToolbar,
             week: {
               header: CustomDayHeader
+            },
+            month: {
+              dateHeader: ({ date }: { date: Date }) => {
+                const isToday = moment(date).isSame(moment(), 'day')
+                return (
+                  <div className={cn(
+                    "text-center p-1",
+                    isToday && "bg-[#059669] text-white rounded-md font-bold"
+                  )}>
+                    {moment(date).format('D')}
+                  </div>
+                )
+              }
+            },
+            day: {
+              header: CustomDayHeader
             }
           }}
           eventPropGetter={eventStyleGetter}
           dayPropGetter={dayPropGetter}
-          min={new Date(0, 0, 0, 8, 0, 0)}
-          max={new Date(0, 0, 0, 18, 0, 0)}
+          min={new Date(0, 0, 0, 0, 0, 0)}
+          max={new Date(0, 0, 0, 23, 59, 59)}
           step={30}
           timeslots={2}
           formats={{
-            timeGutterFormat: 'HH:mm'
+            timeGutterFormat: 'HH:mm',
+            monthHeaderFormat: 'MMMM YYYY',
+            dayHeaderFormat: 'ddd',
+            dayRangeHeaderFormat: ({ start, end }: { start: Date; end: Date }) => {
+              return `${moment(start).format('MMM D')} - ${moment(end).format('MMM D')}`
+            }
           }}
-          className="automi-calendar"
+          className={cn(
+            "automi-calendar",
+            "text-xs sm:text-sm md:text-base" // Responsive text sizing
+          )}
         />
       </div>
 
-      {/* Floating Chat Button */}
-      <button className="fixed bottom-8 right-8 w-14 h-14 bg-[#064e3b] border border-[rgba(4,120,87,0.3)] 
-                        rounded-full flex items-center justify-center shadow-[0px_0px_20px_0px_rgba(6,78,59,0.4)]
+      {/* Floating Chat Button - Hide on small screens */}
+      <button className="hidden md:flex fixed bottom-8 right-8 w-14 h-14 bg-[#064e3b] border border-[rgba(4,120,87,0.3)] 
+                        rounded-full items-center justify-center shadow-[0px_0px_20px_0px_rgba(6,78,59,0.4)]
                         hover:scale-105 transition-all duration-200">
         <MessageCircle className="w-5 h-5 text-white" />
       </button>

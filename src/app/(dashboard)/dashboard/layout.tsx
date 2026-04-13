@@ -3,13 +3,15 @@ import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 
 export default function DashboardLayout({children}: {children: React.ReactNode}){
     return (
-        <SidebarProvider>
-            <AppSidebar />
-            <SidebarInset>
-                <div className="flex flex-1 flex-col gap-4 p-4">
-                    {children}
-                </div>
-            </SidebarInset>
-        </SidebarProvider>
+        <div className="h-screen w-screen flex">
+            <SidebarProvider defaultOpen={true}>
+                <AppSidebar />
+                <SidebarInset className="flex-1 h-full">
+                    <div className="flex flex-col h-full w-full flex-1">
+                        {children}
+                    </div>
+                </SidebarInset>
+            </SidebarProvider>
+        </div>
     )
 }

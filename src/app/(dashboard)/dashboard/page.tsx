@@ -3,8 +3,8 @@ import '@/styles/calendar.css'
 
 export default function DashboardPage() {
     return (
-        <div className="-m-4 h-screen overflow-hidden">
-            <WeeklyCalendar />
+        <div className="h-full w-full flex flex-col flex-1">
+            <WeeklyCalendar className="flex-1" />
         </div>
     )
 }
