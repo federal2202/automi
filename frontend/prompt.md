@@ -6,3 +6,4 @@ look, if we will make the dasboard less wide, it will look like that
   have to coordinate the agents to do this, first of all review and make a 
   plan, ask questions if youo have some and the after my acceptance you can
    code
+

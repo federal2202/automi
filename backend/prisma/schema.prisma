@@ -1,0 +1,26 @@
+ generator client {
+    provider = "prisma-client-js"
+  }
+
+  datasource db {
+    provider = "postgresql"
+  }
+
+  model User {
+    id          String   @id @default(cuid())
+    googleId    String   @unique              // ID от Google
+    email       String   @unique              // Email из Google
+    name        String                        // Имя пользователя
+    picture     String?                       // URL аватара
+
+    // Google OAuth токены
+    accessToken  String                       // Google access token
+    refreshToken String                       // Google refresh token
+    expiresAt    DateTime                     // Когда истекает access token
+    scope        String                       // Разрешения (calendar scopes)
+
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    @@map("users")
+  }
