@@ -1,0 +1,409 @@
+/* Custom styles for react-big-calendar to match Figma design */
+
+.automi-calendar.rbc-calendar {
+  background: #0e0e0e;
+  color: #e5e2e1;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 14px;
+}
+
+/* Responsive font sizing */
+@media (max-width: 768px) {
+  .automi-calendar.rbc-calendar {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 640px) {
+  .automi-calendar.rbc-calendar {
+    font-size: 11px;
+  }
+}
+
+/* Hide default toolbar since we have custom one */
+.automi-calendar .rbc-toolbar {
+  display: none;
+}
+
+/* Week view container */
+.automi-calendar .rbc-time-view {
+  background: transparent;
+  border: none;
+}
+
+/* Time gutter (left side time labels) */
+.automi-calendar .rbc-time-gutter {
+  background: transparent;
+  border-right: 1px solid rgba(59, 75, 53, 0.15);
+  width: 80px;
+}
+
+.automi-calendar .rbc-timeslot-group {
+  border-bottom: 1px solid rgba(59, 75, 53, 0.15);
+  min-height: 60px;
+}
+
+.automi-calendar .rbc-time-slot {
+  border-top: 1px solid rgba(59, 75, 53, 0.08);
+  color: #6b7280;
+  font-size: 11px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+/* Day columns */
+.automi-calendar .rbc-time-content {
+  border-top: none;
+}
+
+.automi-calendar .rbc-day-slot {
+  border-left: 1px solid rgba(59, 75, 53, 0.15);
+  background: transparent;
+}
+
+.automi-calendar .rbc-day-slot:first-child {
+  border-left: none;
+}
+
+/* Event styling - override default styles */
+.automi-calendar .rbc-event {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  margin: 4px !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.automi-calendar .rbc-event-content {
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Selected event */
+.automi-calendar .rbc-event.rbc-selected {
+  background: transparent !important;
+  outline: 2px solid #059669 !important;
+  outline-offset: 2px;
+  border-radius: 16px !important;
+}
+
+/* Time grid lines */
+.automi-calendar .rbc-time-header {
+  border: none;
+}
+
+.automi-calendar .rbc-time-header-content {
+  border-left: none;
+  border-right: none;
+}
+
+/* Header styling */
+.automi-calendar .rbc-header {
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: #e5e2e1;
+  font-weight: 400;
+}
+
+/* Current time indicator */
+.automi-calendar .rbc-current-time-indicator {
+  background: #059669;
+  height: 2px;
+  border-radius: 1px;
+  box-shadow: 0 0 8px rgba(5, 150, 105, 0.5);
+}
+
+.automi-calendar .rbc-current-time-indicator::before {
+  content: '';
+  position: absolute;
+  left: -4px;
+  top: -3px;
+  width: 8px;
+  height: 8px;
+  background: #059669;
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(5, 150, 105, 0.8);
+}
+
+/* Today highlighting */
+.automi-calendar .rbc-today {
+  background: rgba(2, 44, 34, 0.05) !important;
+}
+
+/* Enhanced today highlighting for week/day views */
+.automi-calendar .rbc-time-view .rbc-today {
+  background: rgba(2, 44, 34, 0.08) !important;
+  border-left: 2px solid rgba(5, 150, 105, 0.3) !important;
+}
+
+/* Today indicator in time header */
+.automi-calendar .rbc-today .rbc-header {
+  background: rgba(2, 44, 34, 0.1);
+  border-radius: 8px;
+  margin: 0 4px;
+}
+
+/* Remove scrollbars */
+.automi-calendar .rbc-time-content {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(59, 75, 53, 0.3) transparent;
+}
+
+.automi-calendar .rbc-time-content::-webkit-scrollbar {
+  width: 4px;
+}
+
+.automi-calendar .rbc-time-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.automi-calendar .rbc-time-content::-webkit-scrollbar-thumb {
+  background: rgba(59, 75, 53, 0.3);
+  border-radius: 2px;
+}
+
+.automi-calendar .rbc-time-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(59, 75, 53, 0.5);
+}
+
+/* Day header adjustments - no borders between headers */
+.automi-calendar .rbc-header + .rbc-header {
+  border: none;
+}
+
+/* All day events area (hide it) */
+.automi-calendar .rbc-allday-cell {
+  display: none;
+}
+
+/* Weekend columns - slightly different styling */
+.automi-calendar .rbc-day-slot[data-day="0"],
+.automi-calendar .rbc-day-slot[data-day="6"] {
+  background: rgba(59, 75, 53, 0.02);
+}
+
+/* Weekend header styling - more subtle */
+.automi-calendar .rbc-header:nth-child(1),
+.automi-calendar .rbc-header:nth-child(7) {
+  opacity: 0.8;
+}
+
+/* Hide the time range display above events in all views */
+.automi-calendar .rbc-time-range-header {
+  display: none !important;
+}
+
+/* Show time header content to allow custom day headers */
+.automi-calendar .rbc-time-header-content {
+  background: transparent;
+  border: none;
+}
+
+/* Hide the overlay time display that appears above events */
+.automi-calendar .rbc-overlay {
+  display: none !important;
+}
+
+/* Hide any time range overlays */
+.automi-calendar .rbc-time-range-overlay {
+  display: none !important;
+}
+
+/* Hide event time range displays */
+.automi-calendar .rbc-event-time-range {
+  display: none !important;
+}
+
+/* Time labels */
+.automi-calendar .rbc-time-slot {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 10px;
+  color: #6b7280;
+}
+
+/* Remove focus outlines */
+.automi-calendar .rbc-event:focus {
+  outline: none;
+}
+
+/* Ensure proper spacing */
+.automi-calendar .rbc-time-view .rbc-time-gutter .rbc-timeslot-group {
+  border-bottom: 1px solid rgba(59, 75, 53, 0.15);
+}
+
+.automi-calendar .rbc-time-view .rbc-time-content > * + * > * {
+  border-left: 1px solid rgba(59, 75, 53, 0.15);
+}
+
+/* Month View Styles */
+.automi-calendar .rbc-month-view {
+  background: transparent;
+  border: 1px solid rgba(59, 75, 53, 0.15);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+/* Hide the week day names header in month view */
+.automi-calendar .rbc-month-view .rbc-month-header {
+  display: none;
+}
+
+.automi-calendar .rbc-month-row {
+  border-bottom: 1px solid rgba(59, 75, 53, 0.15);
+}
+
+.automi-calendar .rbc-date-cell {
+  padding: 12px 8px;
+  min-height: 100px;
+  border-right: 1px solid rgba(59, 75, 53, 0.15);
+  position: relative;
+}
+
+.automi-calendar .rbc-date-cell:last-child {
+  border-right: none;
+}
+
+.automi-calendar .rbc-date-cell > a {
+  color: #e5e2e1;
+  font-weight: 400;
+  font-size: 13px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.automi-calendar .rbc-date-cell.rbc-off-range > a {
+  color: #6b7280;
+  opacity: 0.4;
+}
+
+.automi-calendar .rbc-date-cell.rbc-today > a {
+  background: #059669;
+  color: white;
+  font-weight: 600;
+}
+
+/* Month view events - minimalistic dots */
+.automi-calendar .rbc-month-view .rbc-event {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  font-size: 0 !important;
+  color: transparent !important;
+  width: 6px !important;
+  height: 6px !important;
+  min-height: 6px !important;
+  position: relative;
+  display: inline-block !important;
+  margin-right: 3px !important;
+  margin-bottom: 2px !important;
+}
+
+.automi-calendar .rbc-month-view .rbc-event::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #059669;
+}
+
+/* Different colors for different event types in month view */
+.automi-calendar .rbc-month-view .event-type-primary::before {
+  background: #059669;
+}
+
+.automi-calendar .rbc-month-view .event-type-secondary::before {
+  background: #ddb7ff;
+}
+
+.automi-calendar .rbc-month-view .event-type-critical::before {
+  background: #a7f3d0;
+  box-shadow: 0 0 4px rgba(167, 243, 208, 0.5);
+}
+
+.automi-calendar .rbc-month-view .event-type-inactive::before {
+  background: #6b7280;
+  opacity: 0.6;
+}
+
+/* Event container for month view */
+.automi-calendar .rbc-month-view .rbc-date-cell .rbc-event-container {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  right: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  align-items: flex-start;
+}
+
+/* Mobile Responsive Styles */
+@media (max-width: 768px) {
+  /* Reduce time gutter width on mobile */
+  .automi-calendar .rbc-time-gutter {
+    width: 60px;
+  }
+  
+  /* Smaller event padding */
+  .automi-calendar .rbc-event {
+    padding: 8px !important;
+    margin: 2px !important;
+  }
+  
+  /* Smaller font in month view */
+  .automi-calendar .rbc-date-cell > a {
+    font-size: 12px;
+  }
+  
+  /* Reduce month view cell height */
+  .automi-calendar .rbc-date-cell {
+    min-height: 60px;
+    padding: 4px;
+  }
+  
+  /* Hide floating chat button */
+  .floating-chat-button {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  /* Even smaller time gutter */
+  .automi-calendar .rbc-time-gutter {
+    width: 50px;
+  }
+  
+  /* Compact events */
+  .automi-calendar .rbc-event {
+    padding: 6px !important;
+    margin: 1px !important;
+    border-radius: 8px !important;
+  }
+  
+  /* Very compact month view */
+  .automi-calendar .rbc-date-cell {
+    min-height: 50px;
+    padding: 2px;
+  }
+  
+  .automi-calendar .rbc-date-cell > a {
+    font-size: 11px;
+  }
+}
