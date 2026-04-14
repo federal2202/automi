@@ -105,6 +105,30 @@ const generateSampleEvents = (): CalendarEvent[] => {
       start: moment(currentWeekStart).day(5).hour(14).minute(0).toDate(), // Friday 14:00
       end: moment(currentWeekStart).day(5).hour(17).minute(0).toDate(), // Friday 17:00
       type: 'inactive'
+    },
+    {
+      id: '12',
+      title: 'Weekend Learning',
+      start: moment(currentWeekStart).day(6).hour(10).minute(0).toDate(), // Saturday 10:00
+      end: moment(currentWeekStart).day(6).hour(12).minute(0).toDate(), // Saturday 12:00
+      type: 'secondary',
+      description: 'Personal development and skill enhancement.'
+    },
+    {
+      id: '13',
+      title: 'Family Time',
+      start: moment(currentWeekStart).day(0).hour(14).minute(0).toDate(), // Sunday 14:00
+      end: moment(currentWeekStart).day(0).hour(16).minute(0).toDate(), // Sunday 16:00
+      type: 'primary',
+      description: 'Quality time with family and friends.'
+    },
+    {
+      id: '14',
+      title: 'Project Planning',
+      start: moment(currentWeekStart).day(0).hour(19).minute(0).toDate(), // Sunday 19:00
+      end: moment(currentWeekStart).day(0).hour(20).minute(30).toDate(), // Sunday 20:30
+      type: 'secondary',
+      description: 'Plan upcoming week and set priorities.'
     }
   ]
 }
@@ -115,17 +139,18 @@ interface WeeklyCalendarProps {
 
 export default function WeeklyCalendar({ className }: WeeklyCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date()) // Use current date
-  const [view, setView] = useState<View>(Views.WORK_WEEK)
+  const [view, setView] = useState<View>(Views.WEEK) // Changed from WORK_WEEK to WEEK for 7 days
   const sampleEvents = generateSampleEvents() // Generate events for current week
 
   const getAvailableViews = () => {
-    return [Views.DAY, Views.WORK_WEEK, Views.MONTH]
+    return [Views.DAY, Views.WEEK, Views.MONTH]
   }
 
   const getViewLabel = (viewType: View) => {
     switch (viewType) {
       case Views.DAY: return 'DAY'
-      case Views.WORK_WEEK: return 'WEEK' 
+      case Views.WEEK: return 'WEEK'
+      case Views.WORK_WEEK: return 'WORK'
       case Views.MONTH: return 'MONTH'
       default: return 'WEEK'
     }
@@ -185,6 +210,7 @@ export default function WeeklyCalendar({ className }: WeeklyCalendarProps) {
       
       if (view === Views.DAY) unit = 'day'
       else if (view === Views.MONTH) unit = 'month'
+      else if (view === Views.WEEK || view === Views.WORK_WEEK) unit = 'week'
       
       setCurrentDate(moment(currentDate).add(amount, unit).toDate())
     }
@@ -263,64 +289,30 @@ export default function WeeklyCalendar({ className }: WeeklyCalendarProps) {
   }
 
   const CustomDayHeader = ({ date, label }: { date: Date; label: string }) => {
-    const isToday = moment(date).isSame(moment(), 'day') // Check against actual current day
+    const isToday = moment(date).isSame(moment(), 'day')
     const dayNumber = moment(date).format('D')
     const dayName = label.toUpperCase()
 
-    // For day view, show full day info prominently
-    if (view === Views.DAY) {
-      return (
-        <div className={cn(
-          "flex flex-col pb-6 mb-4 bg-[rgba(2,44,34,0.08)] border border-[rgba(6,78,59,0.15)] rounded-3xl px-4 py-3 -mx-2"
-        )}>
-          <div className={cn(
-            "flex flex-col items-center gap-1 pb-3 border-b border-solid border-[rgba(6,78,59,0.3)]"
-          )}>
-            <div className={cn(
-              "text-[14px] font-bold tracking-[1.1px] uppercase font-['Plus_Jakarta_Sans'] text-[#059669]"
-            )}>
-              {moment(date).format('dddd')} {/* Full day name */}
-            </div>
-            <div className={cn(
-              "text-[32px] leading-8 font-['Space_Grotesk'] text-[#059669] font-bold"
-            )}>
-              {moment(date).format('MMMM D, YYYY')} {/* Full date */}
-            </div>
-            {isToday && (
-              <div className="text-[10px] font-bold tracking-[1.1px] uppercase font-['Plus_Jakarta_Sans'] text-[#a7f3d0] mt-1">
-                TODAY
-              </div>
-            )}
-          </div>
-        </div>
-      )
-    }
-
-    // Original header for week/month views
+    // Simple styling for all views
     return (
-      <div className={cn(
-        "flex flex-col pb-4",
-        isToday && "bg-[rgba(2,44,34,0.08)] border border-[rgba(6,78,59,0.2)] rounded-3xl px-3 py-2 -mx-2"
-      )}>
+      <div className="flex flex-col items-center py-2">
         <div className={cn(
-          "flex items-baseline justify-between pb-2 border-b border-solid pb-[9px]",
-          isToday ? "border-[rgba(6,78,59,0.4)]" : "border-[rgba(59,75,53,0.15)]"
+          "text-[10px] font-bold tracking-wide uppercase font-['Plus_Jakarta_Sans'] mb-1",
+          isToday ? "text-[#059669]" : "text-white"
         )}>
-          <div className={cn(
-            "text-[11px] font-bold tracking-[1.1px] uppercase font-['Plus_Jakarta_Sans']",
-            isToday ? "text-[#059669]" : "text-[#6b7280]"
-          )}>
-            {dayName}
-            {isToday && (
-              <span className="block text-[8px] text-[#a7f3d0] mt-0.5">TODAY</span>
-            )}
-          </div>
-          <div className={cn(
-            "text-[24px] leading-8 font-['Space_Grotesk']",
-            isToday ? "text-[#059669] font-bold" : "text-[#e5e2e1] font-light"
-          )}>
-            {dayNumber}
-          </div>
+          {dayName}
+        </div>
+        <div className={cn(
+          "text-[20px] leading-5 font-['Space_Grotesk'] font-bold",
+          isToday ? "text-[#059669]" : "text-white"
+        )}>
+          {dayNumber}
+        </div>
+        <div className={cn(
+          "text-[9px] font-medium tracking-wider uppercase font-['Plus_Jakarta_Sans']",
+          isToday ? "text-[#059669]" : "text-white"
+        )}>
+          {moment(date).format('MMM')}
         </div>
       </div>
     )
@@ -370,6 +362,9 @@ export default function WeeklyCalendar({ className }: WeeklyCalendarProps) {
             event: CustomEvent,
             toolbar: CustomToolbar,
             week: {
+              header: CustomDayHeader
+            },
+            work_week: {
               header: CustomDayHeader
             },
             month: {
