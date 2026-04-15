@@ -103,6 +103,7 @@ router.post('/refresh', validateSchema(refreshTokenSchema), async (req, res): Pr
         }
         
         // Генерируем новые токены
+        //зачем при рефреше мы генерируем новый рефреш токен, ведь он же должен быть долгоживущим?
         const newAccessToken = generateAccessToken(user.id);
         const newRefreshToken = generateRefreshToken(user.id);
         

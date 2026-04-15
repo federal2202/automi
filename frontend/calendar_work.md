@@ -56,6 +56,42 @@
 - **Type Safety Issues**: Missing error handling, unsafe casting
 - **Design System Violations**: Hard-coded colors, inconsistent patterns
 
+## Event Styling Refactoring Plan (APPROVED)
+
+### 🎯 New Requirements for Event Styling:
+- **Remove time display** from events (cleaner look)
+- **Use `rounded-sm`** instead of `rounded-2xl` (less rounded)
+- **Remove left borders** (`border-l-4`) - make events "pure" rectangular
+- **Simplified color scheme**: Green, Red, Purple, White (all with opacity)
+- **Smaller events**: Reduce padding and font sizes
+- **Full responsive design** for mobile devices
+
+### 📋 Implementation Tasks:
+1. **CalendarEvent.tsx Changes**:
+   - Remove time display (`{formatTime(event.start)} - {formatTime(event.end)}`)
+   - Change `rounded-2xl` → `rounded-sm`
+   - Remove `border-l-4` from all event types
+   - Reduce padding from `p-4` → `p-2`
+   - Reduce font sizes: title `text-sm` → `text-xs`, description smaller
+
+2. **Color Scheme Simplification**:
+   ```css
+   /* New simplified event colors */
+   - Green: bg-green-500/10 text-green-400
+   - Red: bg-red-500/10 text-red-400  
+   - Purple: bg-purple-500/10 text-purple-400
+   - White: bg-white/10 text-white
+   ```
+
+3. **Responsive Improvements**:
+   - Add better mobile breakpoints in calendar.css
+   - Ensure events remain readable on narrow screens
+   - Test on mobile devices for optimal UX
+
+### 🎨 Before vs After:
+**BEFORE**: Large rounded events with time, left borders, complex colors
+**AFTER**: Compact rectangular events, no time, clean colors, mobile-optimized
+
 ## New Proposed Architecture
 
 **BEFORE:** Monolithic component with everything in one 460-line file
