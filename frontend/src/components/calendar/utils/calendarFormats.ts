@@ -108,11 +108,11 @@ export const monthViewConfig = {
   
   dateHeader: ({ date }: { date: Date }) => {
     const isToday = moment(date).isSame(moment(), 'day')
-    return (
-      <div className={`text-center p-1 ${isToday ? 'bg-[#059669] text-white rounded-md font-bold' : ''}`}>
-        {moment(date).format('D')}
-      </div>
-    )
+    const className = `text-center p-1 ${isToday ? 'bg-[#059669] text-white rounded-md font-bold' : ''}`
+    return {
+      className,
+      content: moment(date).format('D')
+    }
   }
 }
 

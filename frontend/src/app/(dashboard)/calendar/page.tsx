@@ -1,4 +1,4 @@
-import WeeklyCalendar from '@/components/ui/calendar'
+import { WeeklyCalendar } from '@/components/calendar'
 import '@/styles/calendar.css'
 
 export default function CalendarPage() {

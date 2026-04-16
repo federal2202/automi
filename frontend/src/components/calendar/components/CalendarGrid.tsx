@@ -1,11 +1,14 @@
-import React from 'react'
-import { Calendar as BigCalendar, momentLocalizer } from 'react-big-calendar'
+'use client'
+
+import React, { useCallback } from 'react'
+import { Calendar as BigCalendar, momentLocalizer, SlotInfo } from 'react-big-calendar'
 import moment from 'moment'
 import { cn } from '@/utils/cn'
 import { CalendarEvent, CalendarView } from '../types/calendar.types'
 import { CalendarEvent as CalendarEventComponent } from './CalendarEvent'
 import { CalendarDayHeader } from './CalendarDayHeader'
 import { getAvailableViews, getCalendarFormats } from '../utils/dateUtils'
+import { useEventManagement } from '../hooks/useCalendarState'
 import 'react-big-calendar/lib/css/react-big-calendar.css'
 
 const localizer = momentLocalizer(moment)
@@ -21,7 +24,7 @@ interface CalendarGridProps {
 
 /**
  * CalendarGrid Component
- * BigCalendar wrapper with custom components
+ * BigCalendar wrapper with custom components and event handlers
  */
 export const CalendarGrid = React.memo(({ 
   currentDate, 
@@ -31,8 +34,32 @@ export const CalendarGrid = React.memo(({
   onDateChange, 
   className 
 }: CalendarGridProps) => {
+  const { openCreateModal, openEditModal, moveEvent } = useEventManagement()
   
-  // Event style getter - preserves exact styling from original
+  // Event interaction handlers
+  const handleSlotSelect = useCallback((slotInfo: SlotInfo) => {
+    // Only create events when selecting empty slots (not clicking existing events)
+    if (slotInfo.action === 'select') {
+      openCreateModal({
+        start: slotInfo.start,
+        end: slotInfo.end
+      })
+    }
+  }, [openCreateModal])
+  
+  const handleEventSelect = useCallback((event: CalendarEvent) => {
+    openEditModal(event.id)
+  }, [openEditModal])
+  
+  const handleEventDrop = useCallback(({ event, start, end }: any) => {
+    moveEvent(event.id, start, end)
+  }, [moveEvent])
+  
+  const handleEventResize = useCallback(({ event, start, end }: any) => {
+    moveEvent(event.id, start, end)
+  }, [moveEvent])
+  
+  // Event style getter - duration-proportional with no height constraints
   const eventStyleGetter = (event: CalendarEvent) => {
     return {
       style: {
@@ -40,7 +67,9 @@ export const CalendarGrid = React.memo(({
         border: 'none',
         padding: 0,
         height: 'auto',
-        minHeight: view === 'month' ? '6px' : '120px'
+        // Remove minHeight for week/day views to preserve duration scaling
+        // Only apply minHeight for month view dots
+        minHeight: view === 'month' ? '6px' : undefined
       },
       className: `event-type-${event.type}`
     }
@@ -70,7 +99,7 @@ export const CalendarGrid = React.memo(({
   }
 
   return (
-    <div className="w-full flex-1 flex flex-col min-h-0 min-w-0">
+    <div className="w-full flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
       <BigCalendar
         localizer={localizer}
         events={events}
@@ -85,6 +114,16 @@ export const CalendarGrid = React.memo(({
         views={getAvailableViews()}
         date={currentDate}
         onNavigate={onDateChange}
+        
+        // Interactive features
+        selectable={true}
+        onSelectSlot={handleSlotSelect}
+        onSelectEvent={handleEventSelect}
+        onEventDrop={handleEventDrop}
+        onEventResize={handleEventResize}
+        draggableAccessor={() => true}
+        resizable={true}
+        
         components={{
           event: CalendarEventComponent,
           toolbar: () => null, // We use custom toolbar

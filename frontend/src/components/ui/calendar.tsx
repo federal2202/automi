@@ -414,3 +414,5 @@ export default function WeeklyCalendar({ className }: WeeklyCalendarProps) {
     </div>
   )
 }
+
+export { WeeklyCalendar }

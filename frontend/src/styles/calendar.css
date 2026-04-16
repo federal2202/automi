@@ -64,12 +64,16 @@
   border-left: none;
 }
 
-/* Event styling - override default styles */
+/* Event styling - override default styles - NO BORDERS */
 .automi-calendar .rbc-event {
   background: transparent !important;
   border: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
   padding: 0 !important;
-  margin: 4px !important;
+  margin: 2px !important;
   border-radius: 0 !important;
   box-shadow: none !important;
 }
@@ -81,12 +85,14 @@
   height: 100%;
 }
 
-/* Selected event */
+/* Selected event - NO BORDERS */
 .automi-calendar .rbc-event.rbc-selected {
   background: transparent !important;
   outline: 2px solid #059669 !important;
   outline-offset: 2px;
   border-radius: 16px !important;
+  border: none !important;
+  border-left: none !important;
 }
 
 /* Time grid lines */
@@ -133,10 +139,10 @@
   background: rgba(2, 44, 34, 0.05) !important;
 }
 
-/* Enhanced today highlighting for week/day views */
+/* Enhanced today highlighting for week/day views - NO LEFT BORDER */
 .automi-calendar .rbc-time-view .rbc-today {
   background: rgba(2, 44, 34, 0.08) !important;
-  border-left: 2px solid rgba(5, 150, 105, 0.3) !important;
+  border-left: none !important;
 }
 
 /* Today indicator in time header */
@@ -361,10 +367,10 @@
     width: 60px;
   }
   
-  /* Smaller event padding */
+  /* Ultra-compact event margins for mobile while preserving duration-based height */
   .automi-calendar .rbc-event {
-    padding: 8px !important;
-    margin: 2px !important;
+    margin: 1px !important;
+    border: none !important;
   }
   
   /* Smaller font in month view */
@@ -390,11 +396,11 @@
     width: 50px;
   }
   
-  /* Compact events */
+  /* Minimal event margins while preserving duration scaling - NO BORDERS */
   .automi-calendar .rbc-event {
-    padding: 6px !important;
-    margin: 1px !important;
-    border-radius: 8px !important;
+    margin: 0.5px !important;
+    border: none !important;
+    border-left: none !important;
   }
   
   /* Very compact month view */
@@ -405,5 +411,48 @@
   
   .automi-calendar .rbc-date-cell > a {
     font-size: 11px;
+  }
+  
+  /* Ensure week view columns are properly sized on narrow screens */
+  .automi-calendar .rbc-time-content {
+    overflow-x: auto;
+  }
+  
+  /* Reduce time slot height for better mobile viewing */
+  .automi-calendar .rbc-timeslot-group {
+    min-height: 40px;
+  }
+  
+  /* Compact time labels */
+  .automi-calendar .rbc-time-slot {
+    font-size: 9px;
+  }
+}
+
+/* Extra small screens */
+@media (max-width: 480px) {
+  /* Ultra compact time gutter for very narrow screens */
+  .automi-calendar .rbc-time-gutter {
+    width: 40px;
+  }
+  
+  /* Further reduce time slot height */
+  .automi-calendar .rbc-timeslot-group {
+    min-height: 35px;
+  }
+  
+  /* Ultra compact time labels */
+  .automi-calendar .rbc-time-slot {
+    font-size: 8px;
+  }
+  
+  /* Minimal calendar padding */
+  .automi-calendar.rbc-calendar {
+    font-size: 10px;
+  }
+  
+  /* Ensure calendar doesn't break on very narrow screens */
+  .automi-calendar .rbc-time-view {
+    min-width: 280px;
   }
 }

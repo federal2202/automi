@@ -64,7 +64,7 @@ export interface CalendarProps {
  * Event Style Configuration
  * Style mappings for different event types
  */
-export interface EventStyleConfig {
+export type EventStyleConfig = {
   [K in EventType]: {
     container: string
     title: string
@@ -117,6 +117,19 @@ export interface CalendarDayHeaderProps {
 export type NavigationDirection = 'prev' | 'next'
 
 /**
+ * Calendar UI State Interface
+ * UI-specific state for modals, selections, etc.
+ */
+export interface CalendarUIState {
+  isEventModalOpen: boolean
+  isCreateMode: boolean
+  selectedEventId: string | null
+  selectedSlot: { start: Date; end: Date } | null
+  isLoading: boolean
+  error: string | null
+}
+
+/**
  * Calendar Store Actions
  */
 export interface CalendarStoreActions {
@@ -124,12 +137,27 @@ export interface CalendarStoreActions {
   setView: (view: CalendarView) => void
   setEvents: (events: CalendarEvent[]) => void
   navigateCalendar: (direction: NavigationDirection) => void
+  
+  // Event CRUD operations
+  createEvent: (event: Omit<CalendarEvent, 'id'>) => Promise<void>
+  updateEvent: (id: string, updates: Partial<CalendarEvent>) => Promise<void>
+  deleteEvent: (id: string) => Promise<void>
+  moveEvent: (id: string, start: Date, end: Date) => Promise<void>
+  
+  // UI state actions
+  openCreateModal: (slot: { start: Date; end: Date }) => void
+  openEditModal: (eventId: string) => void
+  closeModal: () => void
+  selectEvent: (eventId: string | null) => void
+  setLoading: (loading: boolean) => void
+  setError: (error: string | null) => void
+  
+  // Legacy actions (kept for backward compatibility)
   addEvent: (event: Omit<CalendarEvent, 'id'>) => void
-  updateEvent: (id: string, updates: Partial<CalendarEvent>) => void
   removeEvent: (id: string) => void
 }
 
 /**
  * Combined Calendar Store Interface
  */
-export interface CalendarStore extends CalendarState, CalendarStoreActions {}
+export interface CalendarStore extends CalendarState, CalendarUIState, CalendarStoreActions {}
