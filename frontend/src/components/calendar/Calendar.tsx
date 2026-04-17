@@ -7,8 +7,10 @@ import { CalendarProps, CalendarView } from './types/calendar.types'
 import { CalendarToolbar } from './components/CalendarToolbar'
 import { CalendarGrid } from './components/CalendarGrid'
 import { FloatingChatButton } from './components/FloatingChatButton'
+import { EventModal } from './components/EventModal'
+import { DeleteConfirmationDialog, useDeleteConfirmation } from './components/DeleteConfirmationDialog'
 import { useEventGeneration } from './hooks/useEventGeneration'
-import { useCalendarState, useCalendarActions } from './hooks/useCalendarState'
+import { useCalendarState, useCalendarActions, useEventManagement } from '@/stores/calendarStore'
 
 /**
  * Main Calendar Component (Refactored)
@@ -24,27 +26,29 @@ export const Calendar = React.memo(({
   // Zustand store state and actions
   const { currentDate, view, events: storeEvents } = useCalendarState()
   const { setCurrentDate, setView, setEvents, navigateCalendar } = useCalendarActions()
+  const { selectedEvent } = useEventManagement()
+  
+  // Delete confirmation dialog state
+  const {
+    isOpen: isDeleteDialogOpen,
+    eventToDelete,
+    openDeleteDialog,
+    closeDeleteDialog,
+  } = useDeleteConfirmation()
   
   // Sample events for initial data
   const sampleEvents = useEventGeneration()
   
-  // Initialize store with props or sample data
+  // Initialize store with props and events - only run once on mount
   useEffect(() => {
-    if (initialDate && currentDate.getTime() !== initialDate.getTime()) {
-      setCurrentDate(initialDate)
+    setCurrentDate(initialDate)
+    setView(initialView)
+    
+    // Only set events if store is empty
+    if (storeEvents.length === 0) {
+      setEvents(sampleEvents)
     }
-    if (initialView && view !== initialView) {
-      setView(initialView)
-    }
-  }, [initialDate, initialView, currentDate, view, setCurrentDate, setView])
-  
-  // Set events from props or use sample events if store is empty
-  useEffect(() => {
-    const eventsToUse = propEvents || sampleEvents
-    if (storeEvents.length === 0 && eventsToUse.length > 0) {
-      setEvents(eventsToUse)
-    }
-  }, [propEvents, sampleEvents, storeEvents.length, setEvents])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
   
   const events = propEvents || storeEvents
 
@@ -60,6 +64,20 @@ export const Calendar = React.memo(({
   const handleDateChange = (date: Date) => {
     setCurrentDate(date)
   }
+
+  // Handle keyboard events for deletion
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Delete key pressed and there's a selected event
+      if ((event.key === 'Delete' || event.key === 'Backspace') && selectedEvent) {
+        event.preventDefault()
+        openDeleteDialog(selectedEvent)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [selectedEvent, openDeleteDialog])
 
   return (
     <div className={cn(
@@ -86,6 +104,18 @@ export const Calendar = React.memo(({
       
       {/* Floating Chat Button */}
       <FloatingChatButton />
+      
+      {/* Event Modal */}
+      <EventModal />
+      
+      {/* Delete Confirmation Dialog */}
+      {eventToDelete && (
+        <DeleteConfirmationDialog
+          isOpen={isDeleteDialogOpen}
+          onClose={closeDeleteDialog}
+          event={eventToDelete}
+        />
+      )}
     </div>
   )
 })

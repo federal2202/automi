@@ -2,16 +2,19 @@
 
 import React, { useCallback } from 'react'
 import { Calendar as BigCalendar, momentLocalizer, SlotInfo } from 'react-big-calendar'
+import withDragAndDrop, { EventInteractionArgs } from 'react-big-calendar/lib/addons/dragAndDrop'
 import moment from 'moment'
 import { cn } from '@/utils/cn'
 import { CalendarEvent, CalendarView } from '../types/calendar.types'
 import { CalendarEvent as CalendarEventComponent } from './CalendarEvent'
 import { CalendarDayHeader } from './CalendarDayHeader'
 import { getAvailableViews, getCalendarFormats } from '../utils/dateUtils'
-import { useEventManagement } from '../hooks/useCalendarState'
+import { useEventManagement } from '@/stores/calendarStore'
 import 'react-big-calendar/lib/css/react-big-calendar.css'
+import 'react-big-calendar/lib/addons/dragAndDrop/styles.css'
 
 const localizer = momentLocalizer(moment)
+const DragAndDropCalendar = withDragAndDrop<CalendarEvent>(BigCalendar)
 
 interface CalendarGridProps {
   currentDate: Date
@@ -34,7 +37,7 @@ export const CalendarGrid = React.memo(({
   onDateChange, 
   className 
 }: CalendarGridProps) => {
-  const { openCreateModal, openEditModal, moveEvent } = useEventManagement()
+  const { openCreateModal, openEditModal, moveEvent, selectEvent } = useEventManagement()
   
   // Event interaction handlers
   const handleSlotSelect = useCallback((slotInfo: SlotInfo) => {
@@ -48,15 +51,22 @@ export const CalendarGrid = React.memo(({
   }, [openCreateModal])
   
   const handleEventSelect = useCallback((event: CalendarEvent) => {
+    selectEvent(event.id)
     openEditModal(event.id)
-  }, [openEditModal])
+  }, [openEditModal, selectEvent])
   
-  const handleEventDrop = useCallback(({ event, start, end }: any) => {
-    moveEvent(event.id, start, end)
+  const handleEventDrop = useCallback((args: EventInteractionArgs<CalendarEvent>) => {
+    const { event, start, end } = args
+    const startDate = typeof start === 'string' ? new Date(start) : start
+    const endDate = typeof end === 'string' ? new Date(end) : end
+    moveEvent(event.id, startDate, endDate)
   }, [moveEvent])
   
-  const handleEventResize = useCallback(({ event, start, end }: any) => {
-    moveEvent(event.id, start, end)
+  const handleEventResize = useCallback((args: EventInteractionArgs<CalendarEvent>) => {
+    const { event, start, end } = args
+    const startDate = typeof start === 'string' ? new Date(start) : start
+    const endDate = typeof end === 'string' ? new Date(end) : end
+    moveEvent(event.id, startDate, endDate)
   }, [moveEvent])
   
   // Event style getter - duration-proportional with no height constraints
@@ -100,7 +110,7 @@ export const CalendarGrid = React.memo(({
 
   return (
     <div className="w-full flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
-      <BigCalendar
+      <DragAndDropCalendar
         localizer={localizer}
         events={events}
         startAccessor="start"

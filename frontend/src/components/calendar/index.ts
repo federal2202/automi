@@ -7,7 +7,7 @@
 export * from './types/calendar.types'
 
 // Hooks
-export * from './hooks/useCalendarState'
+export * from '@/stores/calendarStore'
 export * from './hooks/useEventGeneration'
 
 // Utilities
@@ -16,7 +16,7 @@ export * from './utils/dateUtils'
 export * from './utils/calendarFormats'
 
 // Components
-export * from './components/CalendarEvent'
+export { CalendarEvent as CalendarEventComponent } from './components/CalendarEvent'
 export * from './components/CalendarDayHeader'
 export * from './components/CalendarToolbar'
 export * from './components/CalendarGrid'
