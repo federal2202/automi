@@ -1,4 +1,4 @@
-import * as React from "react"
+import { forwardRef, type ButtonHTMLAttributes } from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { Slot } from "radix-ui"
 

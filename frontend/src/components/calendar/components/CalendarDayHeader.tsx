@@ -1,4 +1,4 @@
-import React from 'react'
+import { memo } from 'react'
 import moment from 'moment'
 import { cn } from '@/utils/cn'
 import { CalendarDayHeaderProps } from '../types/calendar.types'
@@ -8,7 +8,7 @@ import { CalendarDayHeaderProps } from '../types/calendar.types'
  * Extracted from the original CustomDayHeader inline component
  * Renders day headers with date, day name, and today highlighting
  */
-export const CalendarDayHeader = React.memo(({ date, label }: CalendarDayHeaderProps) => {
+export const CalendarDayHeader = memo(({ date, label }: CalendarDayHeaderProps) => {
   const isToday = moment(date).isSame(moment(), 'day')
   const dayNumber = moment(date).format('D')
   const dayName = label.toUpperCase()

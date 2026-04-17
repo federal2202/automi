@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useCallback } from 'react'
+import { memo, useCallback } from 'react'
 import { Calendar as BigCalendar, momentLocalizer, SlotInfo } from 'react-big-calendar'
 import withDragAndDrop, { EventInteractionArgs } from 'react-big-calendar/lib/addons/dragAndDrop'
 import moment from 'moment'
@@ -29,7 +29,7 @@ interface CalendarGridProps {
  * CalendarGrid Component
  * BigCalendar wrapper with custom components and event handlers
  */
-export const CalendarGrid = React.memo(({ 
+export const CalendarGrid = memo(({ 
   currentDate, 
   view, 
   events, 

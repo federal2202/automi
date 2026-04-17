@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect } from 'react'
+import { memo, useEffect } from 'react'
 import { Views } from 'react-big-calendar'
 import { cn } from '@/utils/cn'
 import { CalendarProps, CalendarView } from './types/calendar.types'
@@ -17,7 +17,7 @@ import { useCalendarState, useCalendarActions, useEventManagement } from '@/stor
  * Modular architecture with extracted components using Zustand store
  * Preserves exact visual design and functionality
  */
-export const Calendar = React.memo(({ 
+export const Calendar = memo(({ 
   className,
   initialDate = new Date(),
   initialView = Views.WEEK,

@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import { memo } from 'react'
 import moment from 'moment'
 import { Views } from 'react-big-calendar'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
@@ -13,7 +13,7 @@ import { getCalendarTitle, getViewLabel, getAvailableViews } from '../utils/date
  * Extracted from the original CustomToolbar inline component
  * Renders title, navigation controls, and view switcher
  */
-export const CalendarToolbar = React.memo(({ 
+export const CalendarToolbar = memo(({ 
   currentDate, 
   view, 
   onNavigate, 

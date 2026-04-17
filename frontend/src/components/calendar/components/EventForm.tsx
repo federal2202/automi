@@ -157,54 +157,61 @@ export function EventForm({ mode, initialData, selectedSlot }: EventFormProps) {
   ]
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-5">
       {/* Title Field */}
       <div className="space-y-2">
-        <Label htmlFor="title">Title</Label>
+        <Label htmlFor="title" className="text-[#ffffff]/90 font-medium">Title</Label>
         <Input
           id="title"
           type="text"
           placeholder="Enter event title"
           value={formData.title}
           onChange={(e) => handleChange('title', e.target.value)}
+          className="bg-[#ffffff]/5 border-[#ffffff]/20 text-white placeholder:text-[#ffffff]/50"
           required
         />
       </div>
 
       {/* Start DateTime Field */}
       <div className="space-y-2">
-        <Label htmlFor="start">Start Date & Time</Label>
+        <Label htmlFor="start" className="text-[#ffffff]/90 font-medium">Start Date & Time</Label>
         <Input
           id="start"
           type="datetime-local"
           value={formData.start}
           onChange={(e) => handleChange('start', e.target.value)}
+          className="bg-[#ffffff]/5 border-[#ffffff]/20 text-white placeholder:text-[#ffffff]/50"
           required
         />
       </div>
 
       {/* End DateTime Field */}
       <div className="space-y-2">
-        <Label htmlFor="end">End Date & Time</Label>
+        <Label htmlFor="end" className="text-[#ffffff]/90 font-medium">End Date & Time</Label>
         <Input
           id="end"
           type="datetime-local"
           value={formData.end}
           onChange={(e) => handleChange('end', e.target.value)}
+          className="bg-[#ffffff]/5 border-[#ffffff]/20 text-white placeholder:text-[#ffffff]/50"
           required
         />
       </div>
 
       {/* Event Type Select */}
       <div className="space-y-2">
-        <Label htmlFor="type">Event Type</Label>
+        <Label htmlFor="type" className="text-[#ffffff]/90 font-medium">Event Type</Label>
         <Select value={formData.type} onValueChange={(value: EventType) => handleChange('type', value)}>
-          <SelectTrigger>
+          <SelectTrigger className="bg-[#ffffff]/5 border-[#ffffff]/20 text-white focus:border-green-nice focus:ring-green-nice/30">
             <SelectValue placeholder="Select event type" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="bg-[#1a1a1a]/95 backdrop-blur-md border-[#ffffff]/20 rounded-[12px]">
             {eventTypeOptions.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
+              <SelectItem 
+                key={option.value} 
+                value={option.value}
+                className="text-white hover:bg-green-nice/20 focus:bg-green-nice/20 cursor-pointer"
+              >
                 {option.label}
               </SelectItem>
             ))}
@@ -214,24 +221,26 @@ export function EventForm({ mode, initialData, selectedSlot }: EventFormProps) {
 
       {/* Description Field */}
       <div className="space-y-2">
-        <Label htmlFor="description">Description (Optional)</Label>
+        <Label htmlFor="description" className="text-[#ffffff]/90 font-medium">Description (Optional)</Label>
         <Textarea
           id="description"
           placeholder="Enter event description"
           value={formData.description}
           onChange={(e) => handleChange('description', e.target.value)}
+          className="bg-[#ffffff]/5 border-[#ffffff]/20 text-white placeholder:text-[#ffffff]/50 resize-none"
           rows={3}
         />
       </div>
 
       {/* Form Actions */}
-      <div className="flex justify-between pt-4">
+      <div className="flex justify-between pt-6 border-t border-[#ffffff]/10">
         {mode === 'edit' && (
           <Button
             type="button"
             variant="destructive"
             onClick={handleDelete}
             disabled={isLoading}
+            className="bg-red-500/20 hover:bg-red-500/30 border-red-400/30 text-red-300 transition-all duration-200"
           >
             Delete
           </Button>
@@ -242,12 +251,14 @@ export function EventForm({ mode, initialData, selectedSlot }: EventFormProps) {
             variant="outline"
             onClick={closeModal}
             disabled={isLoading}
+            className="bg-[#ffffff]/5 hover:bg-[#ffffff]/10 border-[#ffffff]/20 text-[#ffffff]/80 hover:text-white transition-all duration-200"
           >
             Cancel
           </Button>
           <Button
             type="submit"
             disabled={isLoading}
+            className="!bg-green-nice hover:!bg-green-nice/80 !border-green-nice !text-white font-medium"
           >
             {isLoading ? 'Saving...' : (mode === 'create' ? 'Create Event' : 'Update Event')}
           </Button>

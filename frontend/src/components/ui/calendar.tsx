@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Calendar as BigCalendar, momentLocalizer, View, Views } from 'react-big-calendar'
 import moment from 'moment'
 import { cn } from '@/utils/cn'

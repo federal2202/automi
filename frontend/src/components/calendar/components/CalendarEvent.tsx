@@ -1,4 +1,4 @@
-import React from 'react'
+import { memo } from 'react'
 import { cn } from '@/utils/cn'
 import { CalendarEventProps } from '../types/calendar.types'
 
@@ -8,7 +8,7 @@ import { CalendarEventProps } from '../types/calendar.types'
  * Events maintain their natural height based on duration while becoming
  * more compact on smaller screens through reduced padding, fonts, and spacing
  */
-export const CalendarEvent = React.memo(({ event }: CalendarEventProps) => {
+export const CalendarEvent = memo(({ event }: CalendarEventProps) => {
   const getEventTypeStyles = (type: string) => {
     switch (type) {
       case 'primary':
