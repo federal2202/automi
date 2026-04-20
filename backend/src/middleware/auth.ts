@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import {Request, Response, NextFunction} from "express";
-import prisma from "../lib/prisma";
+import {prisma} from "../lib/prisma";
+import { AuthRequest } from "../types/auth";
 
 interface JWTPayload {
     userId: string;
@@ -8,7 +9,7 @@ interface JWTPayload {
     exp: number;
 }
 
-export async function authenticateToken(req: Request, res: Response, next: NextFunction) {
+export async function authenticateToken(req: AuthRequest, res: Response, next: NextFunction) {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1]; //bearer token -> token
 

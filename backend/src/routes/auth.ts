@@ -1,7 +1,7 @@
 import express, { Router } from 'express';
 import { google } from 'googleapis';
 import jwt from 'jsonwebtoken';
-import prisma from '../lib/prisma';
+import {prisma} from '../lib/prisma';
 import { generateAccessToken, generateRefreshToken } from '../utils/jwt';
 import { validateSchema, refreshTokenSchema } from '../middleware/validation';
 

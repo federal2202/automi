@@ -1,6 +1,6 @@
 import { google, Auth } from "googleapis";
 import { User } from "@prisma/client";
-import prisma from '../lib/prisma';
+import {prisma} from '../lib/prisma';
 
 export function createGoogleAuthClient(user: User): Auth.OAuth2Client {
     const oauth2Client = new google.auth.OAuth2(
@@ -17,7 +17,7 @@ export function createGoogleAuthClient(user: User): Auth.OAuth2Client {
 }
 
 // Автообновление токенов при истечении
-export async function createCalendarClient(user: User): Promise<any> {
+export async function createCalendarClient(user: User) {
     const oauth2Client = createGoogleAuthClient(user);
     
     // Проверяем истечение токена

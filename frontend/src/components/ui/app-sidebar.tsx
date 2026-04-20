@@ -2,6 +2,7 @@
 
 import Logo from "../shared/Logo"
 import { cn } from "@/utils/cn"
+import { UserProfile } from "../auth"
 import { 
   Sidebar, 
   SidebarContent, 
@@ -114,20 +115,10 @@ export default function AppSidebar(){
 
           {/* User Profile Section */}
           <SidebarFooter className="p-4 border-t border-sidebar-border/50">
-            <div className="flex items-center gap-3 p-3 backdrop-blur-sm w-full overflow-hidden bg-[#ffffff]/2 hover:bg-[#ffffff]/3 transition-colors duration-200 cursor-pointer group-data-[collapsible=icon]:justify-center">
-              <div className="w-8 h-8 rounded-lg bg-green-nice/90 flex items-center justify-center flex-shrink-0 text-white text-sm font-semibold" title="Alex Mercer (Principal Designer)">
-                AM
-              </div>
-              
-              <div className="flex flex-col min-w-0 flex-1 overflow-hidden group-data-[collapsible=icon]:hidden">
-                <span className="text-sm font-medium text-sidebar-foreground whitespace-nowrap truncate">
-                  Alex Mercer
-                </span>
-                <span className="text-xs text-muted-foreground whitespace-nowrap truncate">
-                  Principal Designer
-                </span>
-              </div>
-            </div>
+            <UserProfile 
+              variant="dropdown"
+              onSettingsClick={() => window.location.href = '/dashboard/settings'}
+            />
           </SidebarFooter>
         </Sidebar>
     )

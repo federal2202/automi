@@ -1,13 +1,16 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import Button from './shared/Button';
 import Logo from './shared/Logo';
-
-
-
+import { LoginButton, UserProfile } from './auth';
+import { useAuthState } from '@/hooks/useAuth';
 
 export default function Navbar(){
+  const { isAuthenticated } = useAuthState();
+  const router = useRouter();
+
   return (
     <nav className='w-full max-w-[600px] h-[50px] flex items-center justify-between px-3 lg:px-4 py-3 bg-[#ffffff]/2 border-[1px] mt-4 mx-4 md:mx-0 border-[#ffffff]/10 rounded-[30px] animate-fade-in-down backdrop-blur-sm transition-all duration-300 hover:bg-[#ffffff]/5 hover:border-[#ffffff]/20'>
       <div className='flex items-center gap-1 animate-slide-in-left' style={{animationDelay: '0.1s'}}>
@@ -31,9 +34,21 @@ export default function Navbar(){
         </Link>
       </div>
       <div className='animate-slide-in-right' style={{animationDelay: '0.5s'}}>
-        <div className='transform hover:scale-105 transition-all duration-300'>
-          <Button text="Get Started" onClick={() => {}} type="primary" size="small" />
-        </div>
+        {isAuthenticated ? (
+          <UserProfile 
+            variant="inline" 
+            className="transform hover:scale-105 transition-all duration-300"
+          />
+        ) : (
+          <div className='transform hover:scale-105 transition-all duration-300'>
+            <LoginButton 
+              size="small" 
+              variant="primary" 
+              redirectTo="/dashboard"
+              onSuccess={() => router.refresh()}
+            />
+          </div>
+        )}
       </div>
     </nav>
   )

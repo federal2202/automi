@@ -1,13 +1,14 @@
 import express, { Router } from "express";
 import { authenticateToken } from "../middleware/auth";
 import { createCalendarClient } from "../utils/googleAuth";
+import { AuthRequest } from "../types/auth";
 
 const router: Router = express.Router();
 
 
 router.use(authenticateToken);
 
-router.get('/calendars', async (req, res) => {
+router.get('/calendars', async (req: AuthRequest, res) => {
      try {
         const calendar = await createCalendarClient(req.user!);
         const calendars = await calendar.calendarList.list();
@@ -23,7 +24,7 @@ router.get('/calendars', async (req, res) => {
 
 
 
-router.get('/events', async (req, res) => {
+router.get('/events', async (req: AuthRequest, res) => {
   const { calendarId = 'primary', timeMin, timeMax } = req.query;
   
   try {

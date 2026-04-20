@@ -5,6 +5,7 @@ import express from 'express';
   import { config } from 'dotenv';
   import authRoutes from './routes/auth';      
   import calendarRoutes from './routes/calendar';
+
   import { errorHandler } from './middleware/errorHandler';
 
   config();
@@ -27,6 +28,7 @@ import express from 'express';
   // Routes                                    
   app.use('/auth', authRoutes);
   app.use('/calendar', calendarRoutes);
+
 
   // Health check (уже есть)
   app.get('/health', (req, res) => {
