@@ -5,7 +5,7 @@ import { useAuthStore } from '@/stores/authStore';
 
 
 export default function Page(){
-  const user = useAuthStore((state) => state.getUser());
+  const user = useAuthStore((state) => state.user);
 
   return (
     <div>
