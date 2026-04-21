@@ -5,10 +5,10 @@ import { useRouter } from 'next/navigation';
 import Button from './shared/Button';
 import Logo from './shared/Logo';
 import { LoginButton, UserProfile } from './auth';
-import { useAuthState } from '@/hooks/useAuth';
+import { useAuthStore } from '@/stores/authStore';
 
 export default function Navbar(){
-  const { isAuthenticated } = useAuthState();
+  const { isAuthenticated } = useAuthStore();
   const router = useRouter();
 
   return (
@@ -41,12 +41,13 @@ export default function Navbar(){
           />
         ) : (
           <div className='transform hover:scale-105 transition-all duration-300'>
-            <LoginButton 
+            {/* <LoginButton 
               size="small" 
               variant="primary" 
               redirectTo="/dashboard"
               onSuccess={() => router.refresh()}
-            />
+            /> */}
+            <button>login</button>
           </div>
         )}
       </div>

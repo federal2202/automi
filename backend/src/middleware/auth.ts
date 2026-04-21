@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import {Request, Response, NextFunction} from "express";
+import {Response, NextFunction} from "express";
 import {prisma} from "../lib/prisma";
 import { AuthRequest } from "../types/auth";
 
@@ -10,12 +10,10 @@ interface JWTPayload {
 }
 
 export async function authenticateToken(req: AuthRequest, res: Response, next: NextFunction) {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; //bearer token -> token
+    const token = req.cookies.accessToken;
 
     if(!token){
         return res.status(401).json({ error: 'No token provided' });
-
     }
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JWTPayload;

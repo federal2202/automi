@@ -1,6 +1,7 @@
 import { google, Auth } from "googleapis";
 import { User } from "@prisma/client";
 import {prisma} from '../lib/prisma';
+import { Logger } from '../middleware/logger';
 
 export function createGoogleAuthClient(user: User): Auth.OAuth2Client {
     const oauth2Client = new google.auth.OAuth2(
@@ -16,19 +17,38 @@ export function createGoogleAuthClient(user: User): Auth.OAuth2Client {
     return oauth2Client;
 }
 
-// Автообновление токенов при истечении
+// Auto-refresh tokens when expired
 export async function createCalendarClient(user: User) {
     const oauth2Client = createGoogleAuthClient(user);
     
-    // Проверяем истечение токена
+    // Check for token expiration
     const now = new Date();
+    Logger.debug('Checking Google token expiration', {
+        userId: user.id,
+        expiresAt: user.expiresAt,
+        isExpired: user.expiresAt <= now
+    });
+    
     if (user.expiresAt <= now) {
         try {
-            // Обновляем токены автоматически
+            Logger.info('Google token expired, refreshing automatically', { userId: user.id });
+            
+            // Refresh tokens automatically
             const { credentials } = await oauth2Client.refreshAccessToken();
             oauth2Client.setCredentials(credentials);
             
-            // Сохраняем новые токены в БД
+            Logger.apiCall('Google', 'refreshAccessToken', {
+                userId: user.id,
+                hasNewToken: !!credentials.access_token,
+                newExpiryDate: credentials.expiry_date
+            });
+            
+            // Save new tokens to database
+            Logger.database('User.update', 'Updating user with refreshed Google tokens', {
+                userId: user.id,
+                newExpiresAt: new Date(credentials.expiry_date!)
+            });
+            
             await prisma.user.update({
                 where: { id: user.id },
                 data: {
@@ -37,9 +57,9 @@ export async function createCalendarClient(user: User) {
                 }
             });
             
-            console.log('Google tokens refreshed for user:', user.id);
+            Logger.info('Google tokens refreshed successfully', { userId: user.id });
         } catch (error) {
-            console.error('Failed to refresh Google token:', error);
+            Logger.error('Failed to refresh Google token', { userId: user.id, error });
             throw new Error('Google token refresh failed');
         }
     }
