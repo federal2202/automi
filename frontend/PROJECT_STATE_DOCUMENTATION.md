@@ -1,11 +1,11 @@
 # NotebookLM Project State Documentation
-*Last Updated: 2026-04-17*
+*Last Updated: 2026-04-21*
 
 ## Executive Summary
 
-NotebookLM is a modern web application built with Next.js 16.2.2, React 19, TypeScript, and Tailwind CSS 4. The project features a dual-layout architecture with a marketing landing page and a dashboard interface that includes a fully functional interactive calendar system. The application leverages modern development patterns including App Router, Zustand state management, and modular component architecture.
+NotebookLM is a modern web application built with Next.js 16.2.2, React 19, TypeScript, and Tailwind CSS 4. The project features a dual-layout architecture with a marketing landing page and a dashboard interface that includes a fully functional interactive calendar system and complete Google OAuth authentication flow. The application leverages modern development patterns including App Router, Zustand state management, and secure httpOnly cookie-based authentication.
 
-**Current State:** Production-ready calendar implementation with comprehensive state management, drag-and-drop functionality, and full CRUD operations. Ready for backend integration.
+**Current State:** Production-ready authentication system with Google OAuth integration, secure httpOnly cookie management, and comprehensive calendar implementation. Backend and frontend fully integrated with persistent authentication across browser sessions.
 
 ---
 
@@ -44,11 +44,17 @@ pnpm lint   # ESLint checks
 │   │   ├── calendar/           # Calendar system (detailed below)
 │   │   └── Navigation.tsx      # Main navbar
 │   ├── stores/
-│   │   └── calendarStore.ts    # Zustand calendar state
+│   │   ├── calendarStore.ts    # Zustand calendar state
+│   │   └── authStore.ts        # Zustand authentication state
 │   ├── hooks/
 │   │   └── use-mobile.ts       # Mobile detection hook
 │   ├── utils/
-│   │   └── cn.ts               # Custom clsx wrapper
+│   │   ├── cn.ts               # Custom clsx wrapper
+│   │   └── auth.ts             # Authentication utilities
+│   ├── api/
+│   │   └── axios.ts            # API client configuration
+│   ├── types/
+│   │   └── User.ts             # User type definitions
 │   └── styles/
 │       └── calendar.css        # Calendar-specific styling
 ├── components.json             # shadcn/ui configuration
@@ -193,7 +199,143 @@ interface CalendarEvent {
 
 ---
 
-## 3. Design System & Styling
+## 3. Authentication System Architecture
+
+### Google OAuth Integration
+
+**Implementation Status:** ✅ Complete and Production-Ready
+
+#### Authentication Flow
+```
+1. User clicks "Login with Google" on signup page
+   ↓
+2. Frontend redirects to backend: http://localhost:8000/auth/google
+   ↓  
+3. Backend redirects to Google OAuth with proper scopes
+   ↓
+4. User authorizes on Google platform
+   ↓
+5. Google redirects to backend: /auth/google/callback?code=...
+   ↓
+6. Backend exchanges code for Google tokens, creates/updates user
+   ↓
+7. Backend sets httpOnly cookies (accessToken, refreshToken) 
+   ↓
+8. Backend redirects to frontend: /auth/callback?user={encodedUserData}
+   ↓
+9. Frontend parses user data, stores in Zustand, redirects to /test
+```
+
+#### Security Implementation
+
+**httpOnly Cookies (Secure)**
+- **Access Token:** 30 minutes expiration, httpOnly, sameSite=strict
+- **Refresh Token:** 7 days expiration, httpOnly, sameSite=strict  
+- **Benefits:** Cannot be accessed by JavaScript, XSS protection, automatic sending with requests
+
+**Backend Endpoints**
+```typescript
+GET  /auth/google           # Initiate OAuth flow
+GET  /auth/google/callback  # Handle OAuth callback
+GET  /auth/user            # Get current user (validates httpOnly cookies)
+POST /auth/refresh         # Refresh JWT tokens  
+POST /auth/logout          # Logout and clear cookies
+```
+
+### Frontend Authentication Architecture
+
+#### AuthStore (Zustand)
+**Location:** `/Users/federal/Desktop/notebooklm/frontend/src/stores/authStore.ts`
+
+```typescript
+interface AuthState {
+  user: User | null              # Current user data
+  isAuthenticated: boolean       # Authentication status  
+  isLoading: boolean            # Loading state for auth operations
+  
+  setUser: (user: User | null) => void     # Set user data
+  logout: () => void                       # Clear user and call backend logout
+  checkAuth: () => Promise<void>           # Check authentication via /auth/user
+}
+```
+
+#### Authentication Components
+
+**Signup Page** (`/app/signup/page.tsx`)
+- Beautiful dark modal with glassmorphism design
+- Green glowing effect with brand colors
+- Single Google OAuth button with Lucide React icons
+- Direct window.location.href redirect (no axios for OAuth)
+
+**Callback Handler** (`/app/auth/callback/page.tsx`)  
+- Processes user data from URL parameters
+- Updates authStore with user information
+- Handles errors and redirects appropriately
+- Redirects to /test after successful authentication
+
+**Auth Initializer** (`/components/AuthInitializer.tsx`)
+- Runs on every page load via root layout
+- Calls checkAuth() to verify existing httpOnly cookies
+- Enables persistent authentication across browser tabs/sessions
+
+#### API Integration
+
+**Axios Configuration** (`/api/axios.ts`)
+```typescript
+export const api = axios.create({
+  baseURL: 'http://localhost:8000',
+  withCredentials: true,        # Enables httpOnly cookie sending
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
+```
+
+#### Authentication Utilities
+
+**Auth Utils** (`/utils/auth.ts`)
+```typescript
+parseUserFromUrl(userParam: string): User | null
+// Safely parses and validates user data from OAuth callback URL
+```
+
+**User Types** (`/types/User.ts`)
+```typescript
+interface User {
+  id: string;
+  email: string;
+  name: string;
+  picture?: string;
+}
+```
+
+### Cross-Tab Authentication Persistence
+
+**Problem Solved:** Each browser tab had separate Zustand store instances, causing "Please login" in new tabs even when authenticated.
+
+**Solution:** AuthInitializer component calls `/auth/user` endpoint on every page load:
+1. **New tab opens** → AuthInitializer runs
+2. **Calls /auth/user** → Backend validates httpOnly cookies  
+3. **Returns user data** → Frontend updates authStore
+4. **Shows authenticated state** → User sees their name instead of login prompt
+
+### JWT Token Management
+
+**Backend Token Generation:**
+- Uses `jsonwebtoken` library for JWT creation/verification
+- Access tokens: Short-lived (30 minutes) for API requests
+- Refresh tokens: Long-lived (7 days) for token renewal
+- Both stored in httpOnly cookies for maximum security
+
+**Frontend Token Usage:**
+- No token management in JavaScript (security best practice)
+- Tokens automatically sent with API requests via `withCredentials: true`
+- Backend validates tokens on protected endpoints
+- Automatic refresh handled by backend when possible
+
+---
+
+## 4. Design System & Styling
 
 ### Tailwind CSS 4 Configuration
 
@@ -266,9 +408,18 @@ className={cn("base-styles", conditionalStyles, className)}
 
 ---
 
-## 4. Current Implementation Status
+## 5. Current Implementation Status
 
 ### ✅ Completed Features
+
+#### Authentication System (Complete Implementation)
+- **Google OAuth Integration:** Full OAuth 2.0 flow with proper scopes (email, profile, calendar)
+- **Secure Token Management:** httpOnly cookies with appropriate expiration times
+- **Cross-Tab Persistence:** Authentication state maintained across browser tabs and sessions
+- **Beautiful UI:** Glassmorphism signup page with green glowing effects
+- **Error Handling:** Comprehensive error states and user feedback
+- **Backend Integration:** Complete Express.js authentication routes with JWT
+- **Persistent Sessions:** Auto-initialization on page loads via `/auth/user` endpoint
 
 #### Landing Page System
 - Marketing layout with Navigation + Footer

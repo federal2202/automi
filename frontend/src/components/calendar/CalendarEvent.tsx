@@ -1,6 +1,6 @@
 import { memo } from 'react'
 import { cn } from '@/utils/cn'
-import { CalendarEventProps } from '../types/calendar.types'
+import { CalendarEventProps } from '@/types/calendar/calendar.types'
 
 /**
  * CalendarEvent Component

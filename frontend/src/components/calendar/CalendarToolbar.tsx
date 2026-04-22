@@ -5,8 +5,8 @@ import moment from 'moment'
 import { Views } from 'react-big-calendar'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/utils/cn'
-import { CalendarToolbarProps } from '../types/calendar.types'
-import { getCalendarTitle, getViewLabel, getAvailableViews } from '../utils/dateUtils'
+import { CalendarToolbarProps } from '@/types/calendar/calendar.types'
+import { getCalendarTitle, getViewLabel, getAvailableViews } from '@/utils/calendar/dateUtils'
 
 /**
  * CalendarToolbar Component

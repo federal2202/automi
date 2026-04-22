@@ -1,5 +1,5 @@
 import moment from 'moment'
-import { CalendarEvent } from '../types/calendar.types'
+import { CalendarEvent } from '@/types/calendar/calendar.types'
 
 /**
  * BigCalendar Format Configurations

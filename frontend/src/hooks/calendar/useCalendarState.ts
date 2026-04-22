@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { Views } from 'react-big-calendar'
-import { CalendarStore, CalendarEvent, CalendarView, NavigationDirection } from '../types/calendar.types'
-import { navigateCalendarDate } from '../utils/dateUtils'
+import { CalendarStore, CalendarEvent, CalendarView, NavigationDirection } from '@/types/calendar/calendar.types'
+import { navigateCalendarDate } from '@/utils/calendar/dateUtils'
 
 /**
  * Generate unique ID for events

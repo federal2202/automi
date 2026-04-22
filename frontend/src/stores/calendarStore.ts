@@ -1,8 +1,8 @@
 'use client'
 
 import { create } from 'zustand'
-import { CalendarStore, CalendarEvent, CalendarView, NavigationDirection } from '@/components/calendar/types/calendar.types'
-import { navigateCalendarDate } from '@/components/calendar/utils/dateUtils'
+import { CalendarStore, CalendarEvent, CalendarView, NavigationDirection } from '@/types/calendar/calendar.types'
+import { navigateCalendarDate } from '@/utils/calendar/dateUtils'
 
 // Import Views dynamically to avoid SSR issues
 const Views = {

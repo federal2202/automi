@@ -1,7 +1,7 @@
 import { memo } from 'react'
 import moment from 'moment'
 import { cn } from '@/utils/cn'
-import { CalendarDayHeaderProps } from '../types/calendar.types'
+import { CalendarDayHeaderProps } from '@/types/calendar/calendar.types'
 
 /**
  * CalendarDayHeader Component

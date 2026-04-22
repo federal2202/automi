@@ -1,4 +1,4 @@
-import { EventType } from '../types/calendar.types'
+import { EventType } from '@/types/calendar/calendar.types'
 
 /**
  * Calendar Style Constants

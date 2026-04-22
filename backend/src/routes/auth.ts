@@ -190,6 +190,56 @@ router.post('/refresh', async (req, res): Promise<void> => {
     }
 });
 
+// Get current authenticated user
+router.get('/user', async (req, res): Promise<void> => {
+    try {
+        // Extract token from httpOnly cookies
+        const accessToken = req.cookies.accessToken;
+        
+        Logger.debug('Get user endpoint called', { hasAccessToken: !!accessToken });
+        
+        if (!accessToken) {
+            Logger.debug('No access token provided');
+            res.status(401).json({ error: 'Not authenticated' });
+            return;
+        }
+        
+        // Verify JWT token
+        Logger.debug('Verifying access token');
+        const decoded = jwt.verify(accessToken, process.env.JWT_SECRET!) as { userId: string };
+        
+        // Fetch user from database
+        Logger.database('User.findUnique', 'Finding user for authentication check', { userId: decoded.userId });
+        const user = await prisma.user.findUnique({
+            where: { id: decoded.userId }
+        });
+        
+        if (!user) {
+            Logger.error('User not found during authentication check', { userId: decoded.userId });
+            res.status(401).json({ error: 'User not found' });
+            return;
+        }
+        
+        Logger.info('User authentication check successful', { 
+            userId: user.id, 
+            email: user.email 
+        });
+        
+        // Return user data
+        res.json({
+            user: {
+                id: user.id,
+                email: user.email,
+                name: user.name,
+                picture: user.picture,
+            }
+        });
+    } catch (error) {
+        Logger.error('Invalid access token during user check', error);
+        res.status(401).json({ error: 'Invalid token' });
+    }
+});
+
 // Logout endpoint
 router.post('/logout', async (_req, res) => {
     // Clear httpOnly cookies

@@ -1,6 +1,6 @@
 import moment from 'moment'
 import { useMemo } from 'react'
-import { CalendarEvent } from '../types/calendar.types'
+import { CalendarEvent } from '@/types/calendar/calendar.types'
 
 /**
  * Sample Event Generation Hook

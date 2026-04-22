@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Button from './shared/Button';
 import Logo from './shared/Logo';
-import { LoginButton, UserProfile } from './auth';
 import { useAuthStore } from '@/stores/authStore';
 
 export default function Navbar(){
@@ -35,19 +34,12 @@ export default function Navbar(){
       </div>
       <div className='animate-slide-in-right' style={{animationDelay: '0.5s'}}>
         {isAuthenticated ? (
-          <UserProfile 
-            variant="inline" 
-            className="transform hover:scale-105 transition-all duration-300"
-          />
+          <div className="transform hover:scale-105 transition-all duration-300">
+            <Button type="secondary" size="small" text="Dashboard" onClick={() => router.push('/dashboard')} />
+          </div>
         ) : (
           <div className='transform hover:scale-105 transition-all duration-300'>
-            {/* <LoginButton 
-              size="small" 
-              variant="primary" 
-              redirectTo="/dashboard"
-              onSuccess={() => router.refresh()}
-            /> */}
-            <button>login</button>
+            <Button type="primary" size="small" text="Login" />
           </div>
         )}
       </div>

@@ -1,8 +1,9 @@
 # Backend Architecture for Frontend Integration
 
-## 🚀 Backend Status: READY for integration
+## 🚀 Backend Status: ✅ FULLY INTEGRATED
 
 **Backend URL:** `http://localhost:8000`
+**Frontend Integration:** ✅ Complete with httpOnly cookies and persistent authentication
 
 ---
 
@@ -23,20 +24,21 @@
 window.location.href = 'http://localhost:8000/auth/google';
 ```
 
-#### `GET /auth/callback` 
+#### `GET /auth/google/callback` 
 **Description:** Handle Google callback (automatic)
-**Response:**
-```json
-{
-  "accessToken": "jwt-access-token",
-  "refreshToken": "jwt-refresh-token", 
-  "user": {
-    "id": "user-id",
-    "email": "user@gmail.com",
-    "name": "User Name",
-    "picture": "https://avatar-url"
-  }
-}
+**Implementation:** 
+- Exchanges authorization code for Google tokens
+- Creates/updates user in database
+- Generates JWT access/refresh tokens
+- Sets httpOnly cookies with tokens
+- Redirects to frontend with user data
+
+**Response:** Redirect to frontend with user data
+```
+Location: http://localhost:3000/auth/callback?user={encodedUserData}
+
+Set-Cookie: accessToken=jwt-token; HttpOnly; Secure; SameSite=Strict; Max-Age=1800
+Set-Cookie: refreshToken=jwt-token; HttpOnly; Secure; SameSite=Strict; Max-Age=604800
 ```
 
 #### `POST /auth/refresh`
@@ -55,6 +57,28 @@ window.location.href = 'http://localhost:8000/auth/google';
 }
 ```
 
+#### `GET /auth/user`
+**Description:** Get current authenticated user
+**Headers:** Automatically reads httpOnly cookies
+**Authentication:** Validates JWT access token from httpOnly cookies
+**Response (200):**
+```json
+{
+  "user": {
+    "id": "user-id",
+    "email": "user@gmail.com",
+    "name": "User Name", 
+    "picture": "https://avatar-url"
+  }
+}
+```
+**Response (401):**
+```json
+{
+  "error": "Not authenticated"
+}
+```
+
 #### `POST /auth/logout`
 **Description:** Logout from system
 **Response:**
@@ -69,14 +93,11 @@ window.location.href = 'http://localhost:8000/auth/google';
 ## 📅 Calendar API
 
 **⚠️ All calendar endpoints require authentication!**  
-Add header: `Authorization: Bearer <accessToken>`
+Authentication is handled automatically via httpOnly cookies.
 
 #### `GET /calendar/calendars`
 **Description:** Get user's calendar list
-**Headers:**
-```
-Authorization: Bearer <accessToken>
-```
+**Authentication:** Automatic via httpOnly cookies
 **Response:**
 ```json
 {
@@ -92,10 +113,7 @@ Authorization: Bearer <accessToken>
 
 #### `GET /calendar/events`
 **Description:** Get calendar events
-**Headers:**
-```
-Authorization: Bearer <accessToken>
-```
+**Authentication:** Automatic via httpOnly cookies
 **Query Parameters:**
 - `calendarId` (optional) - Calendar ID (default: "primary")
 - `timeMin` (optional) - Start date in ISO format
@@ -141,173 +159,148 @@ GET /calendar/events?calendarId=primary&timeMin=2024-01-01T00:00:00Z&timeMax=202
 
 ## 🔧 Frontend Integration Guide
 
-### 1. API Service
+### 1. Axios Configuration (Implemented)
 
-Create `src/services/api.js`:
+**File:** `src/api/axios.ts`
+```typescript
+import axios from 'axios';
 
-```javascript
-const API_BASE_URL = 'http://localhost:8000';
-
-class ApiService {
-  constructor() {
-    this.accessToken = localStorage.getItem('accessToken');
-    this.refreshToken = localStorage.getItem('refreshToken');
-  }
-
-  async request(endpoint, options = {}) {
-    const url = `${API_BASE_URL}${endpoint}`;
-    
-    const config = {
-      headers: {
-        'Content-Type': 'application/json',
-        ...(this.accessToken && {
-          'Authorization': `Bearer ${this.accessToken}`
-        }),
-        ...options.headers,
-      },
-      ...options,
-    };
-
-    try {
-      const response = await fetch(url, config);
-      
-      // If 401 - try to refresh token
-      if (response.status === 401 && this.refreshToken) {
-        const newTokens = await this.refreshAccessToken();
-        if (newTokens) {
-          // Retry request with new token
-          config.headers.Authorization = `Bearer ${newTokens.accessToken}`;
-          return await fetch(url, config);
-        }
-      }
-      
-      return response;
-    } catch (error) {
-      console.error('API Error:', error);
-      throw error;
-    }
-  }
-
-  async refreshAccessToken() {
-    try {
-      const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken: this.refreshToken }),
-      });
-
-      if (response.ok) {
-        const tokens = await response.json();
-        this.setTokens(tokens.accessToken, tokens.refreshToken);
-        return tokens;
-      }
-    } catch (error) {
-      this.clearTokens();
-      return null;
-    }
-  }
-
-  setTokens(accessToken, refreshToken) {
-    this.accessToken = accessToken;
-    this.refreshToken = refreshToken;
-    localStorage.setItem('accessToken', accessToken);
-    localStorage.setItem('refreshToken', refreshToken);
-  }
-
-  clearTokens() {
-    this.accessToken = null;
-    this.refreshToken = null;
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-  }
-
-  // Calendar methods
-  async getCalendars() {
-    const response = await this.request('/calendar/calendars');
-    return response.json();
-  }
-
-  async getEvents(params = {}) {
-    const queryString = new URLSearchParams(params).toString();
-    const response = await this.request(`/calendar/events?${queryString}`);
-    return response.json();
-  }
-
-  // Auth methods
-  initiateGoogleAuth() {
-    window.location.href = `${API_BASE_URL}/auth/google`;
-  }
-
-  async logout() {
-    try {
-      await this.request('/auth/logout', { method: 'POST' });
-    } finally {
-      this.clearTokens();
-    }
-  }
-}
-
-export default new ApiService();
+export const api = axios.create({
+    baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000',
+    headers: {
+        'Content-Type': 'application/json'
+    },
+    withCredentials: true  // Enables httpOnly cookie sending
+});
 ```
 
-### 2. React Hook for Authentication
+### 2. Authentication Store (Zustand)
 
-```javascript
-// src/hooks/useAuth.js
-import { useState, useEffect } from 'react';
-import apiService from '../services/api';
+**File:** `src/stores/authStore.ts`
+```typescript
+import { create } from 'zustand';
+import { User } from '@/types/User';
+import { api } from '@/api/axios';
 
-export function useAuth() {
-  const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+interface AuthState {
+  user: User | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  
+  setUser: (user: User | null) => void;
+  logout: () => void;
+  checkAuth: () => Promise<void>;  // Calls /auth/user endpoint
+}
+
+export const useAuthStore = create<AuthState>((set, get) => ({
+  user: null,
+  isAuthenticated: false,
+  isLoading: false,
+  
+  setUser: (user) => set({ user, isAuthenticated: !!user }),
+  logout: () => set({ user: null, isAuthenticated: false }),
+  
+  checkAuth: async () => {
+    set({ isLoading: true });
+    try {
+      const response = await api.get('/auth/user');
+      if (response.data.user) {
+        set({ user: response.data.user, isAuthenticated: true });
+      }
+    } catch (error) {
+      set({ user: null, isAuthenticated: false });
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+}));
+```
+
+### 3. Authentication Initialization
+
+**File:** `src/components/AuthInitializer.tsx`
+```typescript
+"use client";
+import { useEffect } from 'react';
+import { useAuthStore } from '@/stores/authStore';
+
+export function AuthInitializer() {
+  const checkAuth = useAuthStore((state) => state.checkAuth);
 
   useEffect(() => {
-    // Check for saved tokens
-    const accessToken = localStorage.getItem('accessToken');
-    if (accessToken) {
-      // TODO: can add request to get user info
-      setUser({ authenticated: true });
-    }
-    setIsLoading(false);
-  }, []);
+    checkAuth(); // Validates httpOnly cookies on page load
+  }, [checkAuth]);
 
-  const login = () => {
-    apiService.initiateGoogleAuth();
-  };
-
-  const logout = async () => {
-    await apiService.logout();
-    setUser(null);
-  };
-
-  return {
-    user,
-    isLoading,
-    isAuthenticated: !!user,
-    login,
-    logout
-  };
+  return null;
 }
 ```
 
-### 3. Handle OAuth Callback
+**Integration in Root Layout:**
+```typescript
+// src/app/layout.tsx
+import { AuthInitializer } from '@/components/AuthInitializer';
 
-After Google authorization, you need to handle the callback and save tokens:
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html>
+      <body>
+        <AuthInitializer />  {/* Runs on every page load */}
+        {children}
+      </body>
+    </html>
+  );
+}
+```
 
-```javascript
-// In your routing or useEffect
-useEffect(() => {
-  // Check URL for tokens (depends on your implementation)
-  const urlParams = new URLSearchParams(window.location.search);
-  const tokens = urlParams.get('tokens'); // Depends on your implementation
-  
-  if (tokens) {
-    const { accessToken, refreshToken } = JSON.parse(tokens);
-    apiService.setTokens(accessToken, refreshToken);
-    // Clear URL and redirect to home
-    window.history.replaceState({}, document.title, '/');
+### 4. Authentication Flow Implementation
+
+**Signup/Login Page:**
+```typescript
+// src/app/signup/page.tsx
+"use client";
+
+export default function SignupPage() {
+  function handleLogin() {
+    // Direct redirect - no axios for OAuth
+    window.location.href = 'http://localhost:8000/auth/google';
   }
-}, []);
+  
+  return (
+    <button onClick={handleLogin}>
+      Login with Google
+    </button>
+  );
+}
+```
+
+**OAuth Callback Handler:**
+```typescript
+// src/app/auth/callback/page.tsx
+"use client";
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuthStore } from '@/stores/authStore';
+import { parseUserFromUrl } from '@/utils/auth';
+
+export default function CallbackPage() {
+  const router = useRouter();
+  const { setUser } = useAuthStore();
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const userParam = urlParams.get('user');
+    
+    if (userParam) {
+      const userData = parseUserFromUrl(userParam);
+      if (userData) {
+        setUser(userData);  // Tokens are already in httpOnly cookies
+        router.push('/dashboard');
+      }
+    }
+  }, [router, setUser]);
+
+  return <div>Completing login...</div>;
+}
 ```
 
 ---

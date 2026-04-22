@@ -4,21 +4,21 @@
  */
 
 // Types
-export * from './types/calendar.types'
+export * from '@/types/calendar/calendar.types'
 
 // Hooks
 export * from '@/stores/calendarStore'
-export * from './hooks/useEventGeneration'
+export * from '@/hooks/calendar/useEventGeneration'
 
 // Utilities
-export * from './utils/calendarStyles'
-export * from './utils/dateUtils'
-export * from './utils/calendarFormats'
+export * from '@/utils/calendar/calendarStyles'
+export * from '@/utils/calendar/dateUtils'
+export * from '@/utils/calendar/calendarFormats'
 
 // Components
-export { CalendarEvent as CalendarEventComponent } from './components/CalendarEvent'
-export * from './components/CalendarDayHeader'
-export * from './components/CalendarToolbar'
-export * from './components/CalendarGrid'
-export * from './components/FloatingChatButton'
+export { CalendarEvent as CalendarEventComponent } from './CalendarEvent'
+export * from './CalendarDayHeader'
+export * from './CalendarToolbar'
+export * from './CalendarGrid'
+export * from './FloatingChatButton'
 export * from './Calendar'

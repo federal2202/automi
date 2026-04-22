@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useEventManagement } from '@/stores/calendarStore'
-import { CalendarEvent, EventType } from '@/components/calendar/types/calendar.types'
+import { CalendarEvent, EventType } from '@/types/calendar/calendar.types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'

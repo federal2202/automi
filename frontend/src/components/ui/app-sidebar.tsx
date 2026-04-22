@@ -2,7 +2,7 @@
 
 import Logo from "../shared/Logo"
 import { cn } from "@/utils/cn"
-import { UserProfile } from "../auth"
+import { useAuthStore } from "@/stores/authStore"
 import { 
   Sidebar, 
   SidebarContent, 
@@ -26,6 +26,7 @@ import {
 
 export default function AppSidebar(){
     const { toggleSidebar } = useSidebar()
+    const { user, isAuthenticated, logout } = useAuthStore()
 
     const navigationItems = [
       {
@@ -115,10 +116,29 @@ export default function AppSidebar(){
 
           {/* User Profile Section */}
           <SidebarFooter className="p-4 border-t border-sidebar-border/50">
-            <UserProfile 
-              variant="dropdown"
-              onSettingsClick={() => window.location.href = '/dashboard/settings'}
-            />
+            {isAuthenticated ? (
+              <div className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center">
+                <div className="w-8 h-8 bg-green-nice/20 rounded-full flex items-center justify-center group-data-[collapsible=icon]:w-6 group-data-[collapsible=icon]:h-6">
+                  <span className="text-green-nice text-sm font-bold">
+                    {user?.name?.charAt(0) || 'U'}
+                  </span>
+                </div>
+                <div className="flex-1 group-data-[collapsible=icon]:hidden">
+                  <p className="text-sm font-medium text-sidebar-foreground">
+                    {user?.name || 'User'}
+                  </p>
+                  <p className="text-xs text-sidebar-foreground/60">
+                    {user?.email || 'user@example.com'}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center group-data-[collapsible=icon]:px-0">
+                <button className="text-sm text-sidebar-foreground/70 hover:text-sidebar-foreground">
+                  Sign In
+                </button>
+              </div>
+            )}
           </SidebarFooter>
         </Sidebar>
     )
