@@ -1,237 +1,148 @@
 'use client'
 
 import { create } from 'zustand'
-import { CalendarStore, CalendarEvent, CalendarView, NavigationDirection } from '@/types/calendar/calendar.types'
+import { CalendarEvent, CalendarView, NavigationDirection } from '@/types/calendar/calendar.types'
 import { navigateCalendarDate } from '@/utils/calendar/dateUtils'
 
-// Import Views dynamically to avoid SSR issues
-const Views = {
-  MONTH: 'month' as const,
-  WEEK: 'week' as const,
-  WORK_WEEK: 'work_week' as const,
-  DAY: 'day' as const,
-  AGENDA: 'agenda' as const
+/**
+ * Calendar API Error Interface
+ * Represents errors that can occur during calendar operations
+ */
+export interface CalendarApiError {
+  readonly message: string
+  readonly type: string
+  readonly details?: Record<string, unknown>
 }
 
 /**
- * Generate unique ID for events
+ * Calendar Store State Interface
+ * Immutable state structure using functional programming patterns
  */
-const generateEventId = (): string => {
-  return `event_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`
+export interface CalendarStoreState {
+  readonly currentDate: Date
+  readonly view: CalendarView
+  readonly selectedCalendarId: string
+  readonly isEventModalOpen: boolean
+  readonly selectedEventId: string | null
+  readonly selectedSlot: { readonly start: Date; readonly end: Date } | null
+  readonly isLoading: boolean
+  readonly error: CalendarApiError | null
 }
 
 /**
- * Enhanced Calendar State Management with Zustand
- * Centralized store for calendar state, UI state, and actions
+ * Calendar Store Actions Interface
+ * Pure action functions following functional programming principles
  */
-export const useCalendarStore = create<CalendarStore>((set, get) => ({
-  // Calendar state
-  currentDate: new Date(),
-  view: Views.WEEK,
-  events: [],
+export interface CalendarStoreActions {
+  readonly setCurrentDate: (date: Date) => void
+  readonly setView: (view: CalendarView) => void
+  readonly setSelectedCalendar: (calendarId: string) => void
+  readonly navigateCalendar: (direction: NavigationDirection) => void
+  readonly openCreateModal: (slot: { readonly start: Date; readonly end: Date }) => void
+  readonly openEditModal: (eventId: string) => void
+  readonly closeModal: () => void
+  readonly selectEvent: (eventId: string | null) => void
+  readonly setLoading: (loading: boolean) => void
+  readonly setError: (error: CalendarApiError | null) => void
+  readonly clearError: () => void
+}
 
-  // UI state
-  isEventModalOpen: false,
-  isCreateMode: false,
-  selectedEventId: null,
-  selectedSlot: null,
-  isLoading: false,
-  error: null,
+/**
+ * Combined Calendar Store Interface
+ * Union of state and actions for type safety
+ */
+export type CalendarStore = CalendarStoreState & CalendarStoreActions
 
-  // Calendar actions
-  setCurrentDate: (date: Date) => {
-    set({ currentDate: date })
-  },
+/**
+ * Create Calendar Store using functional pattern with Zustand
+ * Follows pure functional programming principles with immutable state
+ * UI-only store - events are handled by TanStack Query for better separation of concerns
+ */
+export const useCalendarStore = create<CalendarStore>(
+  (set, get) => ({
+    // Immutable State
+    currentDate: new Date(),
+    view: 'week' as CalendarView,
+    selectedCalendarId: 'primary',
+    isEventModalOpen: false,
+    selectedEventId: null,
+    selectedSlot: null,
+    isLoading: false,
+    error: null,
 
-  setView: (view: CalendarView) => {
-    set({ view })
-  },
+    // Pure Action Functions
+    setCurrentDate: (date: Date) => {
+      set({ currentDate: date })
+    },
 
-  setEvents: (events: CalendarEvent[]) => {
-    set({ events })
-  },
+    setView: (view: CalendarView) => {
+      set({ view })
+    },
 
-  navigateCalendar: (direction: NavigationDirection) => {
-    const { currentDate, view } = get()
-    const newDate = navigateCalendarDate(currentDate, view, direction)
-    set({ currentDate: newDate })
-  },
+    setSelectedCalendar: (calendarId: string) => {
+      set({ selectedCalendarId: calendarId })
+    },
 
-  // Enhanced Event CRUD operations
-  createEvent: async (eventData: Omit<CalendarEvent, 'id'>) => {
-    try {
-      set({ isLoading: true, error: null })
-      
-      const { events } = get()
-      const newEvent: CalendarEvent = {
-        ...eventData,
-        id: generateEventId()
-      }
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500))
-      
+    navigateCalendar: (direction: NavigationDirection) => {
+      const state = get()
+      const newDate = navigateCalendarDate(state.currentDate, state.view, direction)
+      set({ currentDate: newDate })
+    },
+
+    openCreateModal: (slot: { readonly start: Date; readonly end: Date }) => {
       set({ 
-        events: [...events, newEvent],
-        isLoading: false,
-        isEventModalOpen: false,
-        selectedSlot: null,
-        isCreateMode: false
-      })
-    } catch (error) {
-      set({ 
-        isLoading: false, 
-        error: error instanceof Error ? error.message : 'Failed to create event' 
-      })
-    }
-  },
-
-  updateEvent: async (id: string, updates: Partial<CalendarEvent>) => {
-    try {
-      set({ isLoading: true, error: null })
-      
-      const { events } = get()
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 300))
-      
-      const updatedEvents = events.map(event =>
-        event.id === id ? { ...event, ...updates } : event
-      )
-      
-      set({ 
-        events: updatedEvents,
-        isLoading: false,
-        isEventModalOpen: false,
+        isEventModalOpen: true, 
+        selectedSlot: slot,
         selectedEventId: null,
-        isCreateMode: false
+        error: null 
       })
-    } catch (error) {
+    },
+
+    openEditModal: (eventId: string) => {
       set({ 
-        isLoading: false, 
-        error: error instanceof Error ? error.message : 'Failed to update event' 
+        isEventModalOpen: true, 
+        selectedEventId: eventId,
+        selectedSlot: null,
+        error: null 
       })
-    }
-  },
+    },
 
-  deleteEvent: async (id: string) => {
-    try {
-      set({ isLoading: true, error: null })
-      
-      const { events } = get()
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 300))
-      
-      const filteredEvents = events.filter(event => event.id !== id)
-      
+    closeModal: () => {
       set({ 
-        events: filteredEvents,
-        isLoading: false,
-        selectedEventId: null
+        isEventModalOpen: false, 
+        selectedEventId: null,
+        selectedSlot: null,
+        error: null 
       })
-    } catch (error) {
-      set({ 
-        isLoading: false, 
-        error: error instanceof Error ? error.message : 'Failed to delete event' 
-      })
-    }
-  },
+    },
 
-  moveEvent: async (id: string, start: Date, end: Date) => {
-    try {
-      set({ isLoading: true, error: null })
-      
-      const { events } = get()
-      
-      // Optimistically update the UI first
-      const updatedEvents = events.map(event =>
-        event.id === id ? { ...event, start, end } : event
-      )
-      set({ events: updatedEvents })
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 300))
-      
-      set({ isLoading: false })
-    } catch (error) {
-      // Revert the change on error
-      set({ 
-        isLoading: false, 
-        error: error instanceof Error ? error.message : 'Failed to move event' 
-      })
-    }
-  },
+    selectEvent: (eventId: string | null) => {
+      set({ selectedEventId: eventId })
+    },
 
-  // UI state actions
-  openCreateModal: (slot: { start: Date; end: Date }) => {
-    set({ 
-      isEventModalOpen: true, 
-      isCreateMode: true, 
-      selectedSlot: slot,
-      selectedEventId: null,
-      error: null 
-    })
-  },
+    setLoading: (loading: boolean) => {
+      set({ isLoading: loading })
+    },
 
-  openEditModal: (eventId: string) => {
-    set({ 
-      isEventModalOpen: true, 
-      isCreateMode: false, 
-      selectedEventId: eventId,
-      selectedSlot: null,
-      error: null 
-    })
-  },
+    setError: (error: CalendarApiError | null) => {
+      set({ error })
+    },
 
-  closeModal: () => {
-    set({ 
-      isEventModalOpen: false, 
-      isCreateMode: false, 
-      selectedEventId: null,
-      selectedSlot: null,
-      error: null 
-    })
-  },
-
-  selectEvent: (eventId: string | null) => {
-    set({ selectedEventId: eventId })
-  },
-
-  setLoading: (loading: boolean) => {
-    set({ isLoading: loading })
-  },
-
-  setError: (error: string | null) => {
-    set({ error })
-  },
-
-  // Legacy actions (kept for backward compatibility)
-  addEvent: (event: Omit<CalendarEvent, 'id'>) => {
-    const { events } = get()
-    const newEvent: CalendarEvent = {
-      ...event,
-      id: generateEventId()
-    }
-    set({ events: [...events, newEvent] })
-  },
-
-  removeEvent: (id: string) => {
-    const { events } = get()
-    const filteredEvents = events.filter(event => event.id !== id)
-    set({ events: filteredEvents })
-  },
-}))
+    clearError: () => {
+      set({ error: null })
+    },
+  })
+)
 
 /**
- * Hook to access calendar state
+ * Hook to access calendar state (UI state only)
  */
 export const useCalendarState = () => {
   const store = useCalendarStore()
   return {
     currentDate: store.currentDate,
     view: store.view,
-    events: store.events,
+    selectedCalendarId: store.selectedCalendarId,
   }
 }
 
@@ -242,7 +153,7 @@ export const useCalendarUIState = () => {
   const store = useCalendarStore()
   return {
     isEventModalOpen: store.isEventModalOpen,
-    isCreateMode: store.isCreateMode,
+    isCreateMode: store.selectedSlot !== null, // Derive create mode from selectedSlot
     selectedEventId: store.selectedEventId,
     selectedSlot: store.selectedSlot,
     isLoading: store.isLoading,
@@ -258,14 +169,8 @@ export const useCalendarActions = () => {
   return {
     setCurrentDate: store.setCurrentDate,
     setView: store.setView,
-    setEvents: store.setEvents,
+    setSelectedCalendar: store.setSelectedCalendar,
     navigateCalendar: store.navigateCalendar,
-    
-    // Enhanced event operations
-    createEvent: store.createEvent,
-    updateEvent: store.updateEvent,
-    deleteEvent: store.deleteEvent,
-    moveEvent: store.moveEvent,
     
     // UI actions
     openCreateModal: store.openCreateModal,
@@ -274,10 +179,6 @@ export const useCalendarActions = () => {
     selectEvent: store.selectEvent,
     setLoading: store.setLoading,
     setError: store.setError,
-    
-    // Legacy actions
-    addEvent: store.addEvent,
-    removeEvent: store.removeEvent,
   }
 }
 
@@ -304,14 +205,12 @@ export const useCalendarNavigation = () => {
 }
 
 /**
- * Hook for event management
+ * Hook for event UI management (combined with TanStack Query)
+ * Use this hook with TanStack Query hooks for complete event management
+ * Note: This hook provides UI state only. Use with Google Calendar mutation hooks for full functionality.
  */
 export const useEventManagement = () => {
   const { 
-    createEvent, 
-    updateEvent, 
-    deleteEvent, 
-    moveEvent,
     openCreateModal, 
     openEditModal, 
     closeModal,
@@ -326,31 +225,77 @@ export const useEventManagement = () => {
     isLoading, 
     error 
   } = useCalendarUIState()
+
+  // Placeholder functions for backward compatibility
+  // Components should use Google Calendar mutation hooks directly for actual operations
+  const createEvent = (...args: any[]) => {
+    console.warn('createEvent: Use Google Calendar mutation hooks for actual CRUD operations', args)
+  }
   
-  const { events } = useCalendarState()
+  const updateEvent = (...args: any[]) => {
+    console.warn('updateEvent: Use Google Calendar mutation hooks for actual CRUD operations', args)
+  }
   
-  const selectedEvent = selectedEventId 
-    ? events.find(event => event.id === selectedEventId) 
-    : null
+  const deleteEvent = (...args: any[]) => {
+    console.warn('deleteEvent: Use Google Calendar mutation hooks for actual CRUD operations', args)
+  }
+  
+  const moveEvent = (...args: any[]) => {
+    console.warn('moveEvent: Use Google Calendar mutation hooks for actual CRUD operations', args)
+  }
+
+  const selectedEvent = null // Will be provided by useCalendarWithEvents
 
   return {
-    // State
-    events,
-    selectedEvent,
+    // UI State
     isEventModalOpen,
     isCreateMode,
+    selectedEventId,
     selectedSlot,
+    selectedEvent,
     isLoading,
     error,
     
-    // Actions
-    createEvent,
-    updateEvent,
-    deleteEvent,
-    moveEvent,
+    // UI Actions
     openCreateModal,
     openEditModal,
     closeModal,
     selectEvent,
+    
+    // Placeholder CRUD operations (for backward compatibility)
+    createEvent,
+    updateEvent,
+    deleteEvent,
+    moveEvent,
+  }
+}
+
+/**
+ * Hook that combines Zustand UI state with TanStack Query data
+ * @param events - Events from TanStack Query
+ * @returns Combined state with selected event
+ */
+export const useCalendarWithEvents = (events: CalendarEvent[] = []) => {
+  const uiState = useCalendarUIState()
+  const calendarState = useCalendarState()
+  const actions = useCalendarActions()
+  
+  const selectedEvent = uiState.selectedEventId 
+    ? events.find(event => event.id === uiState.selectedEventId) 
+    : null
+
+  return {
+    // Calendar state
+    ...calendarState,
+    
+    // UI state
+    ...uiState,
+    selectedEvent,
+    
+    // Events from TanStack Query
+    events,
+    
+    // Actions
+    ...actions,
   }
 }

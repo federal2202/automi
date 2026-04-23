@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { AuthInitializer } from '@/components/AuthInitializer';
+import { QueryProvider } from '@/components/providers/QueryProvider';
 
 const jakartaSans = Plus_Jakarta_Sans({
   variable: "--font-jakarta",
@@ -34,8 +35,10 @@ export default function RootLayout({
       className={`${jakartaSans.variable} ${spaceGrotesk.variable} h-full antialiased`}
     >
       <body className={`${jakartaSans.className} min-h-full bg-background`}>
-        <AuthInitializer />
-        {children}
+        <QueryProvider>
+          <AuthInitializer />
+          {children}
+        </QueryProvider>
       </body>
     </html>
   );

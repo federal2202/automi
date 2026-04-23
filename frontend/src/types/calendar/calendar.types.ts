@@ -89,6 +89,13 @@ export interface ResponsiveBreakpoints {
 export interface CalendarToolbarProps {
   currentDate: Date
   view: CalendarView
+  calendars?: Array<{
+    id: string
+    summary: string
+    primary?: boolean
+    backgroundColor?: string
+    foregroundColor?: string
+  }>
   onNavigate: (direction: 'prev' | 'next') => void
   onViewChange: (view: CalendarView) => void
   onDateChange: (date: Date) => void

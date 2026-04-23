@@ -81,4 +81,119 @@ router.get('/events', async (req: AuthRequest, res) => {
   }
 });
 
+// Create a new calendar event
+router.post('/events', async (req: AuthRequest, res) => {
+  const { calendarId = 'primary', ...eventData } = req.body;
+  
+  Logger.info('Creating calendar event', { 
+    userId: req.user!.id,
+    calendarId 
+  });
+  
+  try {
+    const calendar = await createCalendarClient(req.user!);
+    
+    Logger.apiCall('Google Calendar', 'events.insert', { calendarId, eventData });
+    
+    const event = await calendar.events.insert({
+      calendarId: calendarId as string,
+      requestBody: eventData
+    });
+    
+    Logger.info('Calendar event created successfully', {
+      userId: req.user!.id,
+      calendarId,
+      eventId: event.data.id
+    });
+    
+    res.status(201).json(event.data);
+  } catch (error) {
+    Logger.error('Event creation error', { 
+      userId: req.user!.id,
+      calendarId,
+      error 
+    });
+    res.status(500).json({ error: 'Failed to create event' });
+  }
+});
+
+// Update an existing calendar event
+router.put('/events/:eventId', async (req: AuthRequest, res) => {
+  const { eventId } = req.params;
+  const { calendarId = 'primary', ...eventData } = req.body;
+  
+  Logger.info('Updating calendar event', { 
+    userId: req.user!.id,
+    calendarId,
+    eventId 
+  });
+  
+  try {
+    const calendar = await createCalendarClient(req.user!);
+    
+    Logger.apiCall('Google Calendar', 'events.update', { calendarId, eventId, eventData });
+    
+    const event = await calendar.events.update({
+      calendarId: calendarId as string,
+      eventId: eventId,
+      requestBody: eventData
+    } as any);
+    
+    Logger.info('Calendar event updated successfully', {
+      userId: req.user!.id,
+      calendarId,
+      eventId
+    });
+    
+    res.json(event.data);
+  } catch (error) {
+    Logger.error('Event update error', { 
+      userId: req.user!.id,
+      calendarId,
+      eventId,
+      error 
+    });
+    res.status(500).json({ error: 'Failed to update event' });
+  }
+});
+
+// Delete a calendar event
+router.delete('/events/:eventId', async (req: AuthRequest, res) => {
+  const { eventId } = req.params;
+  const { calendarId = 'primary' } = req.query;
+  
+  Logger.info('Deleting calendar event', { 
+    userId: req.user!.id,
+    calendarId,
+    eventId 
+  });
+  
+  try {
+    const calendar = await createCalendarClient(req.user!);
+    
+    Logger.apiCall('Google Calendar', 'events.delete', { calendarId, eventId });
+    
+    await calendar.events.delete({
+      calendarId: calendarId as string,
+      eventId: eventId
+    } as any);
+    
+    Logger.info('Calendar event deleted successfully', {
+      userId: req.user!.id,
+      calendarId,
+      eventId
+    });
+    
+    res.status(204).send();
+  } catch (error) {
+    Logger.error('Event deletion error', { 
+      userId: req.user!.id,
+      calendarId,
+      eventId,
+      error 
+    });
+    res.status(500).json({ error: 'Failed to delete event' });
+  }
+});
+
 export default router;

@@ -9,8 +9,8 @@ import { CalendarGrid } from './CalendarGrid'
 import { FloatingChatButton } from './FloatingChatButton'
 import { EventModal } from './EventModal'
 import { DeleteConfirmationDialog, useDeleteConfirmation } from './DeleteConfirmationDialog'
-import { useEventGeneration } from '@/hooks/calendar/useEventGeneration'
-import { useCalendarState, useCalendarActions, useEventManagement } from '@/stores/calendarStore'
+import { useCalendarWithGoogle } from '@/hooks/calendar/useCalendarWithGoogle'
+import { useCalendarActions, useEventManagement } from '@/stores/calendarStore'
 
 /**
  * Main Calendar Component (Refactored)
@@ -23,9 +23,19 @@ export const Calendar = memo(({
   initialView = Views.WEEK,
   events: propEvents
 }: CalendarProps) => {
-  // Zustand store state and actions
-  const { currentDate, view, events: storeEvents } = useCalendarState()
-  const { setCurrentDate, setView, setEvents, navigateCalendar } = useCalendarActions()
+  // Google Calendar integration with fallback to sample data
+  const { 
+    events: calendarEvents, 
+    calendars,
+    isLoading,
+    error,
+    isUsingGoogleCalendar,
+    currentDate,
+    view,
+    refetch
+  } = useCalendarWithGoogle()
+  
+  const { setCurrentDate, setView, navigateCalendar } = useCalendarActions()
   const { selectedEvent } = useEventManagement()
   
   // Delete confirmation dialog state
@@ -36,21 +46,14 @@ export const Calendar = memo(({
     closeDeleteDialog,
   } = useDeleteConfirmation()
   
-  // Sample events for initial data
-  const sampleEvents = useEventGeneration()
-  
-  // Initialize store with props and events - only run once on mount
+  // Initialize store with props - only run once on mount
   useEffect(() => {
     setCurrentDate(initialDate)
     setView(initialView)
-    
-    // Only set events if store is empty
-    if (storeEvents.length === 0) {
-      setEvents(sampleEvents)
-    }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
   
-  const events = propEvents || storeEvents
+  // Use prop events if provided, otherwise use calendar events (Google or sample)
+  const events = propEvents || calendarEvents
 
   // Navigation handlers using store actions
   const handleNavigate = (direction: 'prev' | 'next') => {
@@ -79,15 +82,62 @@ export const Calendar = memo(({
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [selectedEvent, openDeleteDialog])
 
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className={cn(
+        "bg-[#0e0e0e] text-white h-full w-full flex flex-col items-center justify-center p-8", 
+        className
+      )}>
+        <div className="flex flex-col items-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[--green-nice]"></div>
+          <p className="text-lg">Loading calendar...</p>
+          {isUsingGoogleCalendar && <p className="text-sm text-gray-400">Connecting to Google Calendar</p>}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className={cn(
       "bg-[#0e0e0e] text-white h-full w-full flex flex-col p-2 sm:p-4 md:p-6 lg:p-8", 
       className
     )}>
+      {/* Error message if Google Calendar failed but we have fallback data */}
+      {error && !isUsingGoogleCalendar && (
+        <div className="mb-4 p-3 bg-yellow-900/50 border border-yellow-600 rounded-lg">
+          <p className="text-sm text-yellow-200">
+            Unable to connect to Google Calendar. Showing sample data. 
+            <button 
+              onClick={() => refetch()}
+              className="ml-2 underline hover:no-underline"
+            >
+              Retry
+            </button>
+          </p>
+        </div>
+      )}
+      
+      {/* Success indicator for Google Calendar */}
+      {isUsingGoogleCalendar && (
+        <div className="mb-4 p-3 bg-green-900/50 border border-green-600 rounded-lg">
+          <p className="text-sm text-green-200">
+            Connected to Google Calendar ({calendars.length} calendar{calendars.length !== 1 ? 's' : ''} available)
+          </p>
+        </div>
+      )}
+
       {/* Custom Toolbar */}
       <CalendarToolbar
         currentDate={currentDate}
         view={view}
+        calendars={calendars.map(cal => ({
+          id: cal.id,
+          summary: cal.summary,
+          primary: cal.primary,
+          backgroundColor: cal.backgroundColor,
+          foregroundColor: cal.foregroundColor
+        }))}
         onNavigate={handleNavigate}
         onViewChange={handleViewChange}
         onDateChange={handleDateChange}
