@@ -11,7 +11,8 @@ This guide documents the complete Google Calendar integration implementation for
 5. [API Endpoints](#api-endpoints)
 6. [Error Handling](#error-handling)
 7. [Testing Guide](#testing-guide)
-8. [Future Enhancements](#future-enhancements)
+8. [Recent Bug Fixes](#-recent-bug-fixes)
+9. [Future Enhancements](#future-enhancements)
 
 ## 🏗️ Architecture Overview
 
@@ -215,43 +216,82 @@ export const useCreateGoogleCalendarEvent = () => {
 ```
 
 #### E. Zustand Store (`src/stores/calendarStore.ts`)
+
+The Zustand store is **UI-only** for raw state (currentDate, view, modal open/close, `selectedEventId`, `selectedCalendarId`, `error`). However, it *also* exposes thin CRUD wrapper hooks (`createEvent`, `updateEvent`, `deleteEvent`, `moveEvent`) via `useEventManagement`. These wrappers do not hold data themselves — they internally call the TanStack Query mutation hooks (`useCreateGoogleCalendarEvent`, `useUpdateGoogleCalendarEvent`, `useDeleteGoogleCalendarEvent`) from `@/hooks/calendar/useGoogleCalendar` and funnel the store's `selectedCalendarId` into them. The currently `selectedEvent` is **not** stored — it is resolved on demand by scanning the TanStack Query cache via `queryClient.getQueriesData(googleCalendarQueryKeys.events())` for the event matching `selectedEventId` (skipping the raw-variant caches whose keys end in `'raw'`).
+
 ```typescript
 import { create } from 'zustand'
+import { useQueryClient } from '@tanstack/react-query'
+import {
+  useCreateGoogleCalendarEvent,
+  useUpdateGoogleCalendarEvent,
+  useDeleteGoogleCalendarEvent,
+  googleCalendarQueryKeys,
+} from '@/hooks/calendar/useGoogleCalendar'
 
-// UI-only store (data handled by TanStack Query)
+// UI-only state (data handled by TanStack Query)
 interface CalendarStore {
-  // UI State
   currentDate: Date
   view: CalendarView
   isEventModalOpen: boolean
   selectedEventId: string | null
-  
-  // UI Actions
+  selectedCalendarId: string
+  error: string | null
+
   setCurrentDate: (date: Date) => void
   setView: (view: CalendarView) => void
   openEventModal: (eventId?: string) => void
   closeEventModal: () => void
+  setError: (error: string | null) => void
 }
 
 export const useCalendarStore = create<CalendarStore>((set) => ({
-  // State
   currentDate: new Date(),
   view: 'week',
   isEventModalOpen: false,
   selectedEventId: null,
-  
-  // Actions
+  selectedCalendarId: 'primary',
+  error: null,
   setCurrentDate: (date) => set({ currentDate: date }),
   setView: (view) => set({ view }),
-  openEventModal: (eventId) => set({ 
-    isEventModalOpen: true, 
-    selectedEventId: eventId || null 
-  }),
-  closeEventModal: () => set({ 
-    isEventModalOpen: false, 
-    selectedEventId: null 
-  })
+  openEventModal: (eventId) => set({ isEventModalOpen: true, selectedEventId: eventId ?? null }),
+  closeEventModal: () => set({ isEventModalOpen: false, selectedEventId: null }),
+  setError: (error) => set({ error }),
 }))
+
+// CRUD wrapper hook — thin bridge to TanStack Query mutations
+export function useEventManagement() {
+  const queryClient = useQueryClient()
+  const { selectedEventId, selectedCalendarId, closeEventModal, setError } = useCalendarStore()
+  const createMutation = useCreateGoogleCalendarEvent()
+  const updateMutation = useUpdateGoogleCalendarEvent()
+  const deleteMutation = useDeleteGoogleCalendarEvent()
+
+  // selectedEvent is derived from the TanStack Query cache, not stored
+  const selectedEvent = (() => {
+    if (!selectedEventId) return null
+    const caches = queryClient.getQueriesData({ queryKey: googleCalendarQueryKeys.events() })
+    for (const [key, data] of caches) {
+      if ((key as readonly unknown[]).at(-1) === 'raw') continue
+      const match = (data as CalendarEvent[] | undefined)?.find((e) => e.id === selectedEventId)
+      if (match) return match
+    }
+    return null
+  })()
+
+  const createEvent = async (event: Partial<CalendarEvent>) => {
+    try {
+      await createMutation.mutateAsync({ calendarId: selectedCalendarId, event })
+      closeEventModal()
+    } catch (e) { setError((e as Error).message) }
+  }
+  // updateEvent / deleteEvent / moveEvent follow the same pattern
+
+  const isLoading =
+    createMutation.isPending || updateMutation.isPending || deleteMutation.isPending
+
+  return { selectedEvent, createEvent, /* updateEvent, deleteEvent, moveEvent, */ isLoading }
+}
 ```
 
 #### F. Combined Hook (`src/hooks/calendar/useCalendarWithGoogle.ts`)
@@ -556,6 +596,26 @@ cd frontend && pnpm dev
 - Invalid authentication
 - Google API rate limits
 - Malformed data
+
+## 🐛 Recent Bug Fixes
+
+This section documents bug fixes applied to the Google Calendar integration so future developers/agents can understand the current state of the code.
+
+### Bug 1 — Create Event modal button did not send an API request
+The Create button in `EventForm` had no effect. The root cause was in `src/stores/calendarStore.ts`: the `useEventManagement` hook exposed `createEvent`, `updateEvent`, `deleteEvent`, and `moveEvent` as placeholder no-ops that only called `console.warn`. They were never wired to real mutations.
+
+### Bug 2 — Edit Event modal showed the wrong times; Update/Delete did not work
+Opening an existing event showed the *current* time instead of the event's actual start/end, and Update/Delete buttons were no-ops. Root cause: `useEventManagement` hardcoded `selectedEvent: null`. That meant `EventForm` received `initialData={undefined}` and fell back to create-mode defaults built from `new Date()`. The mutation wrappers were also no-ops (see Bug 1), so Update/Delete could not fire.
+
+### Fix (single file: `src/stores/calendarStore.ts`)
+- Imported `useQueryClient` from `@tanstack/react-query`, the mutation hooks `useCreateGoogleCalendarEvent` / `useUpdateGoogleCalendarEvent` / `useDeleteGoogleCalendarEvent`, and `googleCalendarQueryKeys` from `@/hooks/calendar/useGoogleCalendar`.
+- Wired `createEvent` / `updateEvent` / `deleteEvent` / `moveEvent` to call the corresponding `mutateAsync` with the store's `selectedCalendarId`. They close the modal on success and route errors through `setError`.
+- `selectedEvent` is now resolved on demand by scanning the TanStack Query cache: `queryClient.getQueriesData(googleCalendarQueryKeys.events())`. Raw-variant caches (keys ending in `'raw'`) are skipped, and the transformed event whose `id` matches `selectedEventId` is returned.
+- `isLoading` now also reflects any mutation's `isPending` (not just query-loading state).
+
+### Known Issues
+
+**Partial updates can overwrite fields.** `useUpdateGoogleCalendarEvent` (in `src/hooks/calendar/useGoogleCalendar.ts`) builds a full Google event payload from `Partial<CalendarEvent>` using fallbacks like `title || 'Updated Event'` and `start || new Date()`. Because the Google Calendar PUT replaces the whole event, this works fine for full-form edits (since `EventForm` sends every field) but is lossy for `moveEvent` drag/resize, which only passes `start` / `end` — the event's `title` would be overwritten with the literal string `'Updated Event'`. **Recommended future fix:** switch to PATCH, or fetch-then-merge the existing event before PUTing, so partial updates preserve untouched fields.
 
 ## 🚀 Future Enhancements
 

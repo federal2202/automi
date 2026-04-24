@@ -1,8 +1,16 @@
 'use client'
 
 import { create } from 'zustand'
+import { useMemo } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { CalendarEvent, CalendarView, NavigationDirection } from '@/types/calendar/calendar.types'
 import { navigateCalendarDate } from '@/utils/calendar/dateUtils'
+import {
+  useCreateGoogleCalendarEvent,
+  useUpdateGoogleCalendarEvent,
+  useDeleteGoogleCalendarEvent,
+  googleCalendarQueryKeys,
+} from '@/hooks/calendar/useGoogleCalendar'
 
 /**
  * Calendar API Error Interface
@@ -210,41 +218,119 @@ export const useCalendarNavigation = () => {
  * Note: This hook provides UI state only. Use with Google Calendar mutation hooks for full functionality.
  */
 export const useEventManagement = () => {
-  const { 
-    openCreateModal, 
-    openEditModal, 
+  const {
+    openCreateModal,
+    openEditModal,
     closeModal,
-    selectEvent 
+    selectEvent,
+    setError,
   } = useCalendarActions()
-  
-  const { 
-    isEventModalOpen, 
-    isCreateMode, 
-    selectedEventId, 
-    selectedSlot, 
-    isLoading, 
-    error 
+
+  const {
+    isEventModalOpen,
+    isCreateMode,
+    selectedEventId,
+    selectedSlot,
+    isLoading: uiLoading,
+    error,
   } = useCalendarUIState()
 
-  // Placeholder functions for backward compatibility
-  // Components should use Google Calendar mutation hooks directly for actual operations
-  const createEvent = (...args: any[]) => {
-    console.warn('createEvent: Use Google Calendar mutation hooks for actual CRUD operations', args)
-  }
-  
-  const updateEvent = (...args: any[]) => {
-    console.warn('updateEvent: Use Google Calendar mutation hooks for actual CRUD operations', args)
-  }
-  
-  const deleteEvent = (...args: any[]) => {
-    console.warn('deleteEvent: Use Google Calendar mutation hooks for actual CRUD operations', args)
-  }
-  
-  const moveEvent = (...args: any[]) => {
-    console.warn('moveEvent: Use Google Calendar mutation hooks for actual CRUD operations', args)
+  const selectedCalendarId = useCalendarStore((s) => s.selectedCalendarId)
+
+  const queryClient = useQueryClient()
+
+  const createMutation = useCreateGoogleCalendarEvent()
+  const updateMutation = useUpdateGoogleCalendarEvent()
+  const deleteMutation = useDeleteGoogleCalendarEvent()
+
+  const isLoading =
+    uiLoading ||
+    createMutation.isPending ||
+    updateMutation.isPending ||
+    deleteMutation.isPending
+
+  // Find selectedEvent by scanning cached event queries
+  const selectedEvent = useMemo<CalendarEvent | null>(() => {
+    if (!selectedEventId) return null
+    const caches = queryClient.getQueriesData<readonly CalendarEvent[]>({
+      queryKey: googleCalendarQueryKeys.events(),
+    })
+    for (const [key, data] of caches) {
+      // Skip the "raw" cache variants (last element === 'raw')
+      if (Array.isArray(key) && key[key.length - 1] === 'raw') continue
+      if (!data) continue
+      const found = data.find((e) => e.id === selectedEventId)
+      if (found) return found
+    }
+    return null
+  }, [selectedEventId, queryClient, isEventModalOpen])
+
+  const createEvent = async (eventData: Omit<CalendarEvent, 'id'>) => {
+    try {
+      await createMutation.mutateAsync({
+        calendarId: selectedCalendarId,
+        event: eventData,
+      })
+      closeModal()
+    } catch (err: any) {
+      setError({
+        message: err?.message || 'Failed to create event',
+        type: err?.type || 'UNKNOWN_ERROR',
+      })
+      throw err
+    }
   }
 
-  const selectedEvent = null // Will be provided by useCalendarWithEvents
+  const updateEvent = async (
+    eventId: string,
+    updates: Partial<CalendarEvent>
+  ) => {
+    try {
+      await updateMutation.mutateAsync({
+        calendarId: selectedCalendarId,
+        eventId,
+        updates,
+      })
+      closeModal()
+    } catch (err: any) {
+      setError({
+        message: err?.message || 'Failed to update event',
+        type: err?.type || 'UNKNOWN_ERROR',
+      })
+      throw err
+    }
+  }
+
+  const deleteEvent = async (eventId: string) => {
+    try {
+      await deleteMutation.mutateAsync({
+        calendarId: selectedCalendarId,
+        eventId,
+      })
+      closeModal()
+    } catch (err: any) {
+      setError({
+        message: err?.message || 'Failed to delete event',
+        type: err?.type || 'UNKNOWN_ERROR',
+      })
+      throw err
+    }
+  }
+
+  const moveEvent = async (eventId: string, start: Date, end: Date) => {
+    try {
+      await updateMutation.mutateAsync({
+        calendarId: selectedCalendarId,
+        eventId,
+        updates: { start, end },
+      })
+    } catch (err: any) {
+      setError({
+        message: err?.message || 'Failed to move event',
+        type: err?.type || 'UNKNOWN_ERROR',
+      })
+    }
+  }
 
   return {
     // UI State
