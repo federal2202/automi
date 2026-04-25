@@ -34,10 +34,10 @@ export default function CallbackPage() {
         setUser(userData);
         
         console.log('Authentication successful:', userData);
-        
-        // Redirect to test page
-        router.push('/test');
-        
+
+        // Redirect to dashboard page
+        router.push('/dashboard/calendar');
+
       } catch (error) {
         console.error('Callback processing error:', error);
         router.push('/signup?error=auth_failed');
