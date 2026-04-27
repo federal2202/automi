@@ -244,120 +244,251 @@
   border-left: 1px solid rgba(59, 75, 53, 0.15);
 }
 
-/* Month View Styles */
+/* ==========================================================================
+   Month View — minimalistic, no horizontal scroll
+   ========================================================================== */
+
 .automi-calendar .rbc-month-view {
   background: transparent;
-  border: 1px solid rgba(59, 75, 53, 0.15);
-  border-radius: 16px;
+  border: 1px solid rgba(229, 226, 225, 0.06);
+  border-radius: 14px;
   overflow: hidden;
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
 
-/* Hide the week day names header in month view */
+/* Kill any horizontal scroll inside month view */
+.automi-calendar .rbc-month-view,
+.automi-calendar .rbc-month-view * {
+  overflow-x: hidden;
+}
+
+/* Hide the default week-day names header (we use a custom header elsewhere) */
 .automi-calendar .rbc-month-view .rbc-month-header {
   display: none;
 }
 
+/* Each row: equal flex distribution, no min-width that forces scroll */
 .automi-calendar .rbc-month-row {
-  border-bottom: 1px solid rgba(59, 75, 53, 0.15);
+  border-bottom: 1px solid rgba(229, 226, 225, 0.06);
+  min-height: 0;
+  overflow: hidden;
+  flex: 1 1 0%;
+  display: flex;
+  flex-direction: column;
 }
 
-.automi-calendar .rbc-date-cell {
-  padding: 12px 8px;
-  min-height: 100px;
-  border-right: 1px solid rgba(59, 75, 53, 0.15);
-  position: relative;
+.automi-calendar .rbc-month-row:last-child {
+  border-bottom: none;
 }
 
-.automi-calendar .rbc-date-cell:last-child {
+/* Background row — defines the cell grid */
+.automi-calendar .rbc-month-row .rbc-row-bg {
+  display: flex;
+  flex: 1 1 0%;
+}
+
+.automi-calendar .rbc-day-bg {
+  flex: 1 1 0%;
+  min-width: 0;
+  border-right: 1px solid rgba(229, 226, 225, 0.06);
+  background: transparent;
+  transition: background-color 0.15s ease;
+}
+
+.automi-calendar .rbc-day-bg:last-child {
   border-right: none;
 }
 
-.automi-calendar .rbc-date-cell > a {
-  color: #e5e2e1;
-  font-weight: 400;
-  font-size: 13px;
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  width: 24px;
-  height: 24px;
+.automi-calendar .rbc-day-bg:hover {
+  background: rgba(255, 255, 255, 0.02);
+  cursor: pointer;
+}
+
+/* Today cell background — subtle brand tint */
+.automi-calendar .rbc-month-view .rbc-day-bg.rbc-today {
+  background: rgba(0, 143, 76, 0.06) !important;
+}
+
+.automi-calendar .rbc-month-view .rbc-day-bg.rbc-today:hover {
+  background: rgba(0, 143, 76, 0.10) !important;
+}
+
+/* Off-range (prev/next month) cell background */
+.automi-calendar .rbc-day-bg.rbc-off-range-bg {
+  background: transparent;
+}
+
+/* Date number row */
+.automi-calendar .rbc-row-content {
+  position: relative;
+  z-index: 2;
+  flex: 1 1 0%;
   display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.automi-calendar .rbc-month-view .rbc-date-cell {
+  padding: 6px 8px 0;
+  text-align: left;
+  flex: 1 1 0%;
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(229, 226, 225, 0.55);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  border: none;
+  position: relative;
+  pointer-events: none; /* let underlying day-bg take the click */
+}
+
+.automi-calendar .rbc-month-view .rbc-date-cell > a,
+.automi-calendar .rbc-month-view .rbc-date-cell > a:hover,
+.automi-calendar .rbc-month-view .rbc-date-cell > a:focus {
+  color: inherit;
+  text-decoration: none;
+  font-weight: inherit;
+  font-size: inherit;
+  background: transparent;
+  position: static;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 6px;
-  transition: all 0.2s;
+  width: auto;
+  height: auto;
+  padding: 0;
+  border-radius: 0;
+  pointer-events: auto;
 }
 
-.automi-calendar .rbc-date-cell.rbc-off-range > a {
-  color: #6b7280;
-  opacity: 0.4;
+.automi-calendar .rbc-month-view .rbc-date-cell.rbc-off-range {
+  color: rgba(229, 226, 225, 0.2);
 }
 
-.automi-calendar .rbc-date-cell.rbc-today > a {
-  background: #059669;
-  color: white;
+.automi-calendar .rbc-month-view .rbc-date-cell.rbc-off-range > a {
+  color: rgba(229, 226, 225, 0.2);
+}
+
+/* Today's date number — brand green pill */
+.automi-calendar .rbc-month-view .rbc-date-cell.rbc-now > a,
+.automi-calendar .rbc-month-view .rbc-date-cell.rbc-current > a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--green-nice);
+  color: #ffffff;
   font-weight: 600;
+  font-size: 12px;
 }
 
-/* Month view events - minimalistic dots */
+/* Event row segments inside the cell */
+.automi-calendar .rbc-month-view .rbc-row-segment {
+  padding: 1px 6px;
+  min-width: 0;
+}
+
+/* Month-view event chips */
 .automi-calendar .rbc-month-view .rbc-event {
-  background: transparent !important;
-  border: none !important;
-  border-radius: 0 !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  font-size: 0 !important;
-  color: transparent !important;
-  width: 6px !important;
-  height: 6px !important;
-  min-height: 6px !important;
-  position: relative;
-  display: inline-block !important;
-  margin-right: 3px !important;
-  margin-bottom: 2px !important;
+  background: rgba(0, 143, 76, 0.14) !important;
+  border: 1px solid rgba(0, 143, 76, 0.25) !important;
+  color: #d1f0e0 !important;
+  border-radius: 6px !important;
+  padding: 2px 6px !important;
+  margin: 1px 0 !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  line-height: 1.25 !important;
+  height: auto !important;
+  min-height: 0 !important;
+  width: auto !important;
+  display: block !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: none !important;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
 .automi-calendar .rbc-month-view .rbc-event::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #059669;
+  content: none;
 }
 
-/* Different colors for different event types in month view */
-.automi-calendar .rbc-month-view .event-type-primary::before {
-  background: #059669;
+.automi-calendar .rbc-month-view .rbc-event:hover {
+  background: rgba(0, 143, 76, 0.22) !important;
+  border-color: rgba(0, 143, 76, 0.4) !important;
 }
 
-.automi-calendar .rbc-month-view .event-type-secondary::before {
-  background: #ddb7ff;
+.automi-calendar .rbc-month-view .rbc-event.rbc-selected {
+  outline: 1px solid var(--green-nice) !important;
+  outline-offset: 1px;
+  background: rgba(0, 143, 76, 0.22) !important;
 }
 
-.automi-calendar .rbc-month-view .event-type-critical::before {
-  background: #a7f3d0;
-  box-shadow: 0 0 4px rgba(167, 243, 208, 0.5);
+.automi-calendar .rbc-month-view .rbc-event-content {
+  font-size: 11px !important;
+  color: inherit !important;
+  font-weight: 500;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.automi-calendar .rbc-month-view .event-type-inactive::before {
-  background: #6b7280;
-  opacity: 0.6;
+/* Event type variants */
+.automi-calendar .rbc-month-view .rbc-event.event-type-secondary {
+  background: rgba(221, 183, 255, 0.12) !important;
+  border-color: rgba(221, 183, 255, 0.25) !important;
+  color: #ead6ff !important;
+}
+.automi-calendar .rbc-month-view .rbc-event.event-type-secondary:hover {
+  background: rgba(221, 183, 255, 0.2) !important;
+  border-color: rgba(221, 183, 255, 0.4) !important;
 }
 
-/* Event container for month view */
-.automi-calendar .rbc-month-view .rbc-date-cell .rbc-event-container {
-  position: absolute;
-  bottom: 8px;
-  left: 8px;
-  right: 8px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 2px;
-  align-items: flex-start;
+.automi-calendar .rbc-month-view .rbc-event.event-type-critical {
+  background: rgba(248, 113, 113, 0.12) !important;
+  border-color: rgba(248, 113, 113, 0.28) !important;
+  color: #fecaca !important;
+}
+.automi-calendar .rbc-month-view .rbc-event.event-type-critical:hover {
+  background: rgba(248, 113, 113, 0.2) !important;
+  border-color: rgba(248, 113, 113, 0.45) !important;
+}
+
+.automi-calendar .rbc-month-view .rbc-event.event-type-inactive {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: rgba(229, 226, 225, 0.6) !important;
+}
+.automi-calendar .rbc-month-view .rbc-event.event-type-inactive:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+}
+
+/* "+ N more" pill */
+.automi-calendar .rbc-month-view .rbc-show-more {
+  background: transparent;
+  color: rgba(229, 226, 225, 0.55);
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 6px;
+  margin: 1px 0;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  display: inline-block;
+}
+
+.automi-calendar .rbc-month-view .rbc-show-more:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #e5e2e1;
 }
 
 /* Mobile Responsive Styles */
@@ -374,14 +505,19 @@
   }
   
   /* Smaller font in month view */
-  .automi-calendar .rbc-date-cell > a {
-    font-size: 12px;
+  .automi-calendar .rbc-month-view .rbc-date-cell {
+    font-size: 11px;
+    padding: 4px 6px 0;
   }
-  
-  /* Reduce month view cell height */
-  .automi-calendar .rbc-date-cell {
-    min-height: 60px;
-    padding: 4px;
+
+  .automi-calendar .rbc-month-view .rbc-event {
+    font-size: 10px !important;
+    padding: 1px 5px !important;
+  }
+
+  .automi-calendar .rbc-month-view .rbc-show-more {
+    font-size: 10px;
+    padding: 1px 5px;
   }
   
   /* Hide floating chat button */
@@ -404,13 +540,21 @@
   }
   
   /* Very compact month view */
-  .automi-calendar .rbc-date-cell {
-    min-height: 50px;
-    padding: 2px;
+  .automi-calendar .rbc-month-view .rbc-date-cell {
+    padding: 3px 4px 0;
+    font-size: 10px;
   }
-  
-  .automi-calendar .rbc-date-cell > a {
-    font-size: 11px;
+
+  .automi-calendar .rbc-month-view .rbc-date-cell.rbc-now > a,
+  .automi-calendar .rbc-month-view .rbc-date-cell.rbc-current > a {
+    min-width: 18px;
+    height: 18px;
+    font-size: 10px;
+  }
+
+  .automi-calendar .rbc-month-view .rbc-event {
+    font-size: 9px !important;
+    padding: 1px 4px !important;
   }
   
   /* Ensure week view columns are properly sized on narrow screens */

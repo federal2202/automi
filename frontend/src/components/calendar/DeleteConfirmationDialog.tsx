@@ -52,8 +52,8 @@ export function DeleteConfirmationDialog({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle className="text-red-600">Delete Event</DialogTitle>
+        <DialogHeader className="border-l-red-500/70">
+          <DialogTitle className="text-red-400">Delete Event</DialogTitle>
           <DialogDescription>
             Are you sure you want to delete this event? This action cannot be undone.
           </DialogDescription>
@@ -89,15 +89,18 @@ export function DeleteConfirmationDialog({
         <DialogFooter>
           <Button
             type="button"
-            variant="outline"
+            variant="ghost"
+            size="lg"
             onClick={onClose}
             disabled={isLoading}
+            className="text-[#ffffff]/70 hover:text-white hover:bg-white/5"
           >
             Cancel
           </Button>
           <Button
             type="button"
-            variant="destructive"
+            variant="gradient-destructive"
+            size="lg"
             onClick={handleDelete}
             disabled={isLoading}
           >

@@ -27,7 +27,7 @@ export function EventModal() {
 
   return (
     <Dialog open={isEventModalOpen} onOpenChange={closeModal}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[460px]">
         <DialogHeader>
           <DialogTitle>
             {isCreateMode ? 'Create New Event' : 'Edit Event'}

@@ -71,15 +71,18 @@ export const CalendarGrid = memo(({
   
   // Event style getter - duration-proportional with no height constraints
   const eventStyleGetter = (event: CalendarEvent) => {
+    // For month view, let CSS handle the chip styling (don't override).
+    if (view === 'month') {
+      return {
+        className: `event-type-${event.type}`
+      }
+    }
     return {
       style: {
         backgroundColor: 'transparent',
         border: 'none',
         padding: 0,
-        height: 'auto',
-        // Remove minHeight for week/day views to preserve duration scaling
-        // Only apply minHeight for month view dots
-        minHeight: view === 'month' ? '6px' : undefined
+        height: 'auto'
       },
       className: `event-type-${event.type}`
     }
@@ -95,18 +98,31 @@ export const CalendarGrid = memo(({
     }
   }
 
-  // Month view date header component
+  // Month view date header component — minimalistic, top-left, today in brand green
   const MonthDateHeader = ({ date }: { date: Date }) => {
     const isToday = moment(date).isSame(moment(), 'day')
     return (
-      <div className={cn(
-        "text-center p-1",
-        isToday && "bg-[#059669] text-white rounded-md font-bold"
-      )}>
-        {moment(date).format('D')}
+      <div className="flex justify-start">
+        <span
+          className={cn(
+            "inline-flex items-center justify-center text-[12px] font-medium leading-none",
+            isToday
+              ? "min-w-[22px] h-[22px] px-1.5 rounded-full bg-[var(--green-nice)] text-white font-semibold"
+              : "text-[rgba(229,226,225,0.55)]"
+          )}
+        >
+          {moment(date).format('D')}
+        </span>
       </div>
     )
   }
+
+  // Month-view event renderer — just the title, the chip styling lives on .rbc-event
+  const MonthEvent = ({ event }: { event: CalendarEvent }) => (
+    <span className="block truncate text-[11px] font-medium leading-tight">
+      {event.title}
+    </span>
+  )
 
   return (
     <div className="w-full flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
@@ -144,7 +160,8 @@ export const CalendarGrid = memo(({
             header: CalendarDayHeader
           },
           month: {
-            dateHeader: MonthDateHeader
+            dateHeader: MonthDateHeader,
+            event: MonthEvent
           },
           day: {
             header: CalendarDayHeader

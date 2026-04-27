@@ -11,6 +11,7 @@ import { EventModal } from './EventModal'
 import { DeleteConfirmationDialog, useDeleteConfirmation } from './DeleteConfirmationDialog'
 import { useCalendarWithGoogle } from '@/hooks/calendar/useCalendarWithGoogle'
 import { useCalendarActions, useEventManagement } from '@/stores/calendarStore'
+import { Loader } from '@/components/shared/Loader'
 
 /**
  * Main Calendar Component (Refactored)
@@ -82,18 +83,23 @@ export const Calendar = memo(({
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [selectedEvent, openDeleteDialog])
 
-  // Show loading state
+  // Show loading state with branded loader (sidebar remains visible/usable)
   if (isLoading) {
     return (
-      <div className={cn(
-        "bg-[#0e0e0e] text-white h-full w-full flex flex-col items-center justify-center p-8", 
-        className
-      )}>
-        <div className="flex flex-col items-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[--green-nice]"></div>
-          <p className="text-lg">Loading calendar...</p>
-          {isUsingGoogleCalendar && <p className="text-sm text-gray-400">Connecting to Google Calendar</p>}
-        </div>
+      <div
+        className={cn(
+          'bg-[#0e0e0e] text-white h-full w-full flex flex-col items-center justify-center p-8',
+          className
+        )}
+      >
+        <Loader
+          size="lg"
+          label={
+            isUsingGoogleCalendar
+              ? 'LOADING CALENDAR // SYNCING EVENTS'
+              : 'LOADING CALENDAR'
+          }
+        />
       </div>
     )
   }
@@ -118,15 +124,6 @@ export const Calendar = memo(({
         </div>
       )}
       
-      {/* Success indicator for Google Calendar */}
-      {isUsingGoogleCalendar && (
-        <div className="mb-4 p-3 bg-green-900/50 border border-green-600 rounded-lg">
-          <p className="text-sm text-green-200">
-            Connected to Google Calendar ({calendars.length} calendar{calendars.length !== 1 ? 's' : ''} available)
-          </p>
-        </div>
-      )}
-
       {/* Custom Toolbar */}
       <CalendarToolbar
         currentDate={currentDate}

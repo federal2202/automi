@@ -5,7 +5,7 @@ import '@/styles/calendar.css'
 
 export default function CalendarPage() {
     return (
-        <div className="-m-4 h-screen overflow-hidden">
+        <div className="h-full w-full overflow-hidden">
             <WeeklyCalendar />
         </div>
     )

@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
 import { parseUserFromUrl } from '@/utils/auth';
+import { FullScreenLoader } from '@/components/shared/Loader';
 
 export default function CallbackPage() {
   const router = useRouter();
@@ -47,12 +48,5 @@ export default function CallbackPage() {
     handleCallback();
   }, [router, setUser]);
 
-  return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-nice mx-auto mb-4"></div>
-        <p>Completing login...</p>
-      </div>
-    </div>
-  );
+  return <FullScreenLoader intense label="COMPLETING LOGIN // AUTH PROTOCOL" />;
 }

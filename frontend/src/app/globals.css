@@ -15,6 +15,14 @@
   --destructive: #ef4444;
   --destructive-foreground: #fefefe;
   --green-nice: #008f4c;
+  --gradient-success-from: #00a85a;
+  --gradient-success-to: #007d42;
+  --gradient-success-from-hover: #00bd66;
+  --gradient-success-to-hover: #006e3a;
+  --gradient-destructive-from: #ef4444;
+  --gradient-destructive-to: #b91c1c;
+  --gradient-destructive-from-hover: #f87171;
+  --gradient-destructive-to-hover: #991b1b;
   --sidebar: #050505;
   --sidebar-foreground: #ededed;
   --sidebar-border: #262626;
@@ -101,6 +109,55 @@ body {
   }
 }
 
+/* Loader keyframes */
+@keyframes scan-ring {
+  0% {
+    opacity: 0.9;
+    transform: scale(0.4);
+  }
+  80% {
+    opacity: 0;
+    transform: scale(1.05);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes core-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: translate(-50%, -50%) scale(0.7);
+  }
+}
+
+@keyframes orbit-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-scan-ring {
+  animation: scan-ring 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.animate-core-pulse {
+  animation: core-pulse 1.6s ease-in-out infinite;
+}
+
+.animate-orbit-spin {
+  animation: orbit-spin 2.4s linear infinite;
+}
+
 /* Animation classes */
 .animate-fade-in-up {
   animation: fade-in-up 0.8s ease-out both;
@@ -127,4 +184,108 @@ body {
 [data-slot="sidebar-container"],
 [data-slot="sidebar-inner"] {
   border-color: #262626 !important;
+}
+
+/* Supabase-style gradient buttons */
+.btn-gradient-success {
+  background-image: linear-gradient(
+    to bottom,
+    var(--gradient-success-from) 0%,
+    var(--gradient-success-to) 100%
+  );
+  border: 1px solid rgba(0, 0, 0, 0.3);
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.15),
+    0 1px 2px rgba(0, 0, 0, 0.4);
+  color: #ffffff;
+  transition:
+    background-image 200ms ease,
+    box-shadow 200ms ease,
+    transform 120ms ease;
+}
+
+.btn-gradient-success:hover {
+  background-image: linear-gradient(
+    to bottom,
+    var(--gradient-success-from-hover) 0%,
+    var(--gradient-success-to-hover) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.2),
+    0 2px 6px rgba(0, 143, 76, 0.45),
+    0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.btn-gradient-success:focus-visible {
+  outline: none;
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.2),
+    0 0 0 3px rgba(0, 143, 76, 0.4),
+    0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.btn-gradient-destructive {
+  background-image: linear-gradient(
+    to bottom,
+    var(--gradient-destructive-from) 0%,
+    var(--gradient-destructive-to) 100%
+  );
+  border: 1px solid rgba(0, 0, 0, 0.3);
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.15),
+    0 1px 2px rgba(0, 0, 0, 0.4);
+  color: #ffffff;
+  transition:
+    background-image 200ms ease,
+    box-shadow 200ms ease,
+    transform 120ms ease;
+}
+
+.btn-gradient-destructive:hover {
+  background-image: linear-gradient(
+    to bottom,
+    var(--gradient-destructive-from-hover) 0%,
+    var(--gradient-destructive-to-hover) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.2),
+    0 2px 6px rgba(220, 38, 38, 0.45),
+    0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.btn-gradient-destructive:focus-visible {
+  outline: none;
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.2),
+    0 0 0 3px rgba(220, 38, 38, 0.4),
+    0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.btn-gradient-success:disabled,
+.btn-gradient-destructive:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Branded dialog overlay vignette */
+.dialog-overlay-branded {
+  background-color: rgba(0, 0, 0, 0.6);
+  background-image: radial-gradient(
+    circle at 50% 30%,
+    rgba(0, 143, 76, 0.12) 0%,
+    rgba(0, 143, 76, 0.04) 35%,
+    transparent 70%
+  );
+}
+
+.dialog-content-branded {
+  background-color: rgba(15, 18, 16, 0.45);
+  backdrop-filter: blur(24px) saturate(140%);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 20px 60px -15px rgba(0, 143, 76, 0.18),
+    0 8px 32px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
 }
