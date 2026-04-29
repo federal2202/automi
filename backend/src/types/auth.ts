@@ -1,6 +1,6 @@
 import { Request } from "express";
-import { User } from "@prisma/client";
+import type { UserModel } from "../../generated/prisma/models";
 
 export interface AuthRequest extends Request {
-  user?: User;
+  user?: UserModel;
 }
