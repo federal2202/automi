@@ -1,11 +1,11 @@
 # NotebookLM Project State Documentation
-*Last Updated: 2026-04-21*
+*Last Updated: 2026-04-29*
 
 ## Executive Summary
 
-NotebookLM is a modern web application built with Next.js 16.2.2, React 19, TypeScript, and Tailwind CSS 4. The project features a dual-layout architecture with a marketing landing page and a dashboard interface that includes a fully functional interactive calendar system and complete Google OAuth authentication flow. The application leverages modern development patterns including App Router, Zustand state management, and secure httpOnly cookie-based authentication.
+NotebookLM is a modern web application built with Next.js 16.2.2, React 19, TypeScript, and Tailwind CSS 4. The project features a dual-layout architecture with a marketing landing page and a dashboard interface that includes a fully functional interactive calendar system, complete Google OAuth authentication flow, and AI-powered task generation backed by Gemini. The application leverages modern development patterns including App Router, Zustand state management, and secure httpOnly cookie-based authentication.
 
-**Current State:** Production-ready authentication system with Google OAuth integration, secure httpOnly cookie management, and comprehensive calendar implementation. Backend and frontend fully integrated with persistent authentication across browser sessions.
+**Current State:** Production-ready authentication system with Google OAuth integration, secure httpOnly cookie management, comprehensive calendar implementation, and a Tasks-from-Events flow that converts Google Calendar events into structured AI-generated tasks (Gemini → Postgres via Prisma) viewable and toggleable on `/dashboard/tasks`. Backend and frontend fully integrated.
 
 ---
 
@@ -728,6 +728,39 @@ pnpm dev
 2. **Actions:** Add/modify in `useCalendarStore`
 3. **Hooks:** Create specialized access hooks
 4. **Components:** Connect via custom hooks
+
+---
+
+## 8.1 Tasks-from-Events Feature (added 2026-04-29)
+
+### Overview
+Users can mark a calendar event as a "Task" via a checkbox in the event creation modal. When checked, the backend creates the Google Calendar event normally, then sends the event title to Gemini, parses a structured JSON plan, and persists it as a `Task` row linked to the GCal event id. Tasks are listed at `/dashboard/tasks` as compact cards whose border color reflects completion (`border-gray-300` → not done, `border-green-500` → done).
+
+### Backend (`/Users/federal/Desktop/notebooklm/backend`)
+- **Prisma Task model** (`prisma/schema.prisma`) extended with: `eventId`, `description`, `estimatedTimeMinutes`, `difficulty`, `steps` (Json), `resources` (Json?), `successCriteria`, `isDone`, plus `@@index([userId, createdAt])`. Migration: `tasks_from_events`.
+- **Gemini service** (`src/services/gemini.service.ts`) extended with `generateTaskFromTitle(title)` — reuses the existing `gemini-3-flash-preview` model, requests `application/json` mime type, retries once on parse failure, validates the parsed object, and throws `TaskGenerationError` so callers can fall back. Existing `generateText` is untouched.
+- **Calendar controller** (`src/controllers/calendar.controller.ts`, new) — extracts the `POST /calendar/events` handler. When `req.body.isTask === true`, after the GCal insert it calls `generateTaskFromTitle`, persists a Task row, and merges `task` into the response. On Gemini failure it persists a fallback Task (`description = "Task instructions could not be generated."`, empty steps).
+- **Tasks controller** (`src/controllers/tasks.controller.ts`) exports `getTasks`, `getTaskById`, `toggleTaskDone` (all scoped by `req.user.id`).
+- **Routes** (`src/routes/tasks.ts`) — `authenticateToken` is applied router-level; `GET /`, `GET /:id`, `PATCH /:id/done` wired; `POST /generate` retained for the existing Gemini test endpoint. `src/routes/calendar.ts` `POST /events` now delegates to the extracted controller.
+- **Types** (`src/types/task.ts`) — `Step`, `Resource`, `GeneratedTaskData`.
+
+### Frontend
+- **Types:** `src/types/task.ts` (`Task`, `Step`, `Resource`).
+- **Service:** `src/services/tasks.service.ts` — `getTasks`, `getTaskById`, `toggleTaskDone` over the existing axios instance.
+- **Components:** `src/components/tasks/TaskCard.tsx` (compact card; `border-green-500` when done, `border-gray-300/40` otherwise; check icon when done) and `src/components/tasks/TaskList.tsx` (owns optimistic toggle handler with revert on error).
+- **Page:** `src/app/(dashboard)/dashboard/tasks/page.tsx` — TanStack Query fetch + loading/empty/error states feeding `TaskList`.
+- **Modal:** `src/components/calendar/EventForm.tsx` gained a "Task" checkbox (create-mode only) bound to `isTask`, propagated through `src/utils/calendar/calendar-transform.utils.ts` into the POST `/calendar/events` body. `CalendarEvent` type extended with optional `isTask`.
+
+### API contract summary
+| Method | Path | Purpose |
+| --- | --- | --- |
+| POST | `/calendar/events` | Existing endpoint, now accepts `isTask: boolean`; response may include merged `task` field. |
+| GET | `/tasks` | Lists current user's tasks (newest first). |
+| GET | `/tasks/:id` | Single task scoped to user. |
+| PATCH | `/tasks/:id/done` | Body `{ isDone: boolean }` (or omitted to toggle). |
+
+### Routing note
+The original spec referenced `/dashboard/task` (singular). The existing folder uses the plural `tasks/`, which is what was used to avoid duplicate routes.
 
 ---
 

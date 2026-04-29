@@ -28,6 +28,7 @@ interface EventFormData {
   end: string // ISO string format for datetime-local input
   type: EventType
   description: string
+  isTask: boolean
 }
 
 /**
@@ -63,9 +64,10 @@ export function EventForm({ mode, initialData, selectedSlot }: EventFormProps) {
         end: format(initialData.end, "yyyy-MM-dd'T'HH:mm"),
         type: initialData.type,
         description: initialData.description || '',
+        isTask: initialData.isTask ?? false,
       }
     }
-    
+
     if (mode === 'create' && selectedSlot) {
       return {
         title: '',
@@ -73,19 +75,21 @@ export function EventForm({ mode, initialData, selectedSlot }: EventFormProps) {
         end: format(selectedSlot.end, "yyyy-MM-dd'T'HH:mm"),
         type: 'primary',
         description: '',
+        isTask: false,
       }
     }
-    
+
     // Fallback for create mode
     const now = new Date()
     const endTime = new Date(now.getTime() + 60 * 60 * 1000) // 1 hour later
-    
+
     return {
       title: '',
       start: format(now, "yyyy-MM-dd'T'HH:mm"),
       end: format(endTime, "yyyy-MM-dd'T'HH:mm"),
       type: 'primary',
       description: '',
+      isTask: false,
     }
   }, [mode, initialData, selectedSlot])
 
@@ -100,7 +104,7 @@ export function EventForm({ mode, initialData, selectedSlot }: EventFormProps) {
   /**
    * Handle form field changes
    */
-  const handleChange = (field: keyof EventFormData, value: string) => {
+  const handleChange = (field: keyof EventFormData, value: string | boolean) => {
     setFormData(prev => ({
       ...prev,
       [field]: value,
@@ -120,6 +124,7 @@ export function EventForm({ mode, initialData, selectedSlot }: EventFormProps) {
       end: new Date(formData.end),
       type: formData.type,
       description: formData.description || undefined,
+      isTask: formData.isTask,
     }
     
     try {
@@ -232,6 +237,21 @@ export function EventForm({ mode, initialData, selectedSlot }: EventFormProps) {
           rows={3}
         />
       </div>
+
+      {mode === 'create' && (
+        <div className="flex items-center gap-2">
+          <input
+            id="isTask"
+            type="checkbox"
+            checked={formData.isTask}
+            onChange={(e) => handleChange('isTask', e.target.checked)}
+            className="h-4 w-4 rounded border-[#ffffff]/20 bg-[#ffffff]/5 accent-green-500 cursor-pointer"
+          />
+          <Label htmlFor="isTask" className="text-[#ffffff]/90 font-medium cursor-pointer">
+            Task
+          </Label>
+        </div>
+      )}
 
       {/* Form Actions */}
       <div className="flex justify-between pt-6 border-t border-[#ffffff]/10">

@@ -1,60 +1,36 @@
-"use client";
+"use client"
 
-import { api } from "@/api/axios";
-import { useMutation } from "@tanstack/react-query";
+import { useQuery } from '@tanstack/react-query'
+import { getTasks } from '@/services/tasks.service'
+import { TaskList } from '@/components/tasks/TaskList'
 
 export default function TasksPage() {
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['tasks'],
+    queryFn: getTasks,
+  })
 
-    const mutation = useMutation({
-        mutationFn: async () =>
-            await generateText(
-                "tell me a joke."
-            ),
+  return (
+    <div className="p-6">
+      <h1 className="text-2xl font-semibold text-white mb-4">
+        Tasks generated from Calendar Events
+      </h1>
 
-        onSuccess: (data) => {
-            console.log("Generated text:", data);
-        }
-    });
+      {isLoading && <p className="text-white/70">Loading tasks...</p>}
 
-    const handleGenerate = () => {
-        mutation.mutate();
-    };
+      {isError && (
+        <p className="text-red-400">Failed to load tasks. Please try again.</p>
+      )}
 
-    return (
-        <div>
-            <h1>tasks page</h1>
+      {!isLoading && !isError && data && data.length === 0 && (
+        <p className="text-white/70">
+          No tasks yet. Create a calendar event with the Task option enabled to generate one.
+        </p>
+      )}
 
-            <button onClick={handleGenerate}>
-                click
-            </button>
-
-            {mutation.isPending && (
-                <p>Loading...</p>
-            )}
-
-            {mutation.data && (
-                <div>
-                    <h3>Response:</h3>
-
-                    <p>
-                        {mutation.data.data}
-                    </p>
-                </div>
-            )}
-
-            {mutation.error && (
-                <p>Error occurred</p>
-            )}
-        </div>
-    );
-}
-
-async function generateText(prompt: string) {
-
-    const response = await api.post(
-        "/tasks/generate",
-        { prompt }
-    );
-
-    return response.data;
+      {!isLoading && !isError && data && data.length > 0 && (
+        <TaskList tasks={data} />
+      )}
+    </div>
+  )
 }

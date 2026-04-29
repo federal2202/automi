@@ -11,6 +11,7 @@ export interface CalendarEvent {
   end: Date
   type: EventType
   description?: string
+  isTask?: boolean
 }
 
 /**

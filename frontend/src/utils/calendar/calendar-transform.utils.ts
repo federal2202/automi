@@ -263,8 +263,9 @@ export const transformCalendarEventToGoogle = (
     start,
     end,
     colorId: colorIdMap[calendarEvent.type],
-    status: 'confirmed'
-  }
+    status: 'confirmed',
+    ...(calendarEvent.isTask ? { isTask: true } : {}),
+  } as Partial<GoogleCalendarItem> & { isTask?: boolean }
 }
 
 /**
