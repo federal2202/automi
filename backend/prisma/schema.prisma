@@ -2,43 +2,37 @@ generator client {
   provider = "prisma-client"
   output   = "../generated/prisma"
 }
+
 datasource db {
   provider = "postgresql"
 }
 
+model User {
+  id           String   @id @default(cuid())
+  googleId     String   @unique
+  email        String   @unique
+  name         String
+  picture      String?
+  accessToken  String
+  refreshToken String
+  expiresAt    DateTime
+  scope        String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  tasks        Task[]
 
-  model User {
-    id          String   @id @default(cuid())
-    googleId    String   @unique              // ID от Google
-    email       String   @unique              // Email из Google
-    name        String                        // Имя пользователя
-    picture     String?                       // URL аватара
+  @@map("users")
+}
 
-    // Google OAuth токены
-    accessToken  String                       // Google access token
-    refreshToken String                       // Google refresh token
-    expiresAt    DateTime                     // Когда истекает access token
-    scope        String                       // Разрешения (calendar scopes)
+model Task {
+  id        String   @id @default(uuid())
+  title     String
+  solution  String
+  active    Boolean  @default(true)
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-    createdAt   DateTime @default(now())
-    updatedAt   DateTime @updatedAt
-
-    tasks       Task[]
-
-    @@map("users")
-  }
-
-  model Task {
-    id        String   @id @default(uuid())
-    title     String
-    solution  String
-    active    Boolean  @default(true)
-
-    userId    String
-    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-
-    @@map("tasks")
-  }
+  @@map("tasks")
+}

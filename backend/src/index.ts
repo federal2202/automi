@@ -6,6 +6,7 @@ import express from 'express';
   import { config } from 'dotenv';
   import authRoutes from './routes/auth';      
   import calendarRoutes from './routes/calendar';
+  import aiRoutes from './routes/tasks';
 
   import { errorHandler } from './middleware/errorHandler';
   import { requestLogger, Logger } from './middleware/logger';
@@ -34,6 +35,7 @@ import express from 'express';
   // Routes                                    
   app.use('/auth', authRoutes);
   app.use('/calendar', calendarRoutes);
+  app.use('/tasks', aiRoutes);
 
 
   // Health check (уже есть)
