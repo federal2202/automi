@@ -3,6 +3,7 @@ import { authenticateToken } from "../middleware/auth";
 import { createCalendarClient } from "../utils/googleAuth";
 import { AuthRequest } from "../types/auth";
 import { Logger, authLogger } from "../middleware/logger";
+import { createEvent } from "../controllers/calendar.controller";
 
 const router: Router = express.Router();
 
@@ -82,40 +83,7 @@ router.get('/events', async (req: AuthRequest, res) => {
 });
 
 // Create a new calendar event
-router.post('/events', async (req: AuthRequest, res) => {
-  const { calendarId = 'primary', ...eventData } = req.body;
-  
-  Logger.info('Creating calendar event', { 
-    userId: req.user!.id,
-    calendarId 
-  });
-  
-  try {
-    const calendar = await createCalendarClient(req.user!);
-    
-    Logger.apiCall('Google Calendar', 'events.insert', { calendarId, eventData });
-    
-    const event = await calendar.events.insert({
-      calendarId: calendarId as string,
-      requestBody: eventData
-    });
-    
-    Logger.info('Calendar event created successfully', {
-      userId: req.user!.id,
-      calendarId,
-      eventId: event.data.id
-    });
-    
-    res.status(201).json(event.data);
-  } catch (error) {
-    Logger.error('Event creation error', { 
-      userId: req.user!.id,
-      calendarId,
-      error 
-    });
-    res.status(500).json({ error: 'Failed to create event' });
-  }
-});
+router.post('/events', createEvent);
 
 // Update an existing calendar event
 router.put('/events/:eventId', async (req: AuthRequest, res) => {
