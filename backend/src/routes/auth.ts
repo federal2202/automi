@@ -9,6 +9,12 @@ import { Logger } from '../middleware/logger';
 
 const router: Router = express.Router();
 
+const REQUIRED_SCOPES = [
+    'https://www.googleapis.com/auth/userinfo.email',
+    'https://www.googleapis.com/auth/userinfo.profile',
+    'https://www.googleapis.com/auth/calendar',
+];
+
 // Google OAuth2 client setup
 const oauth2Client = new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
@@ -20,15 +26,16 @@ const oauth2Client = new google.auth.OAuth2(
 router.get('/google', (_req, res) => {
     const authUrl = oauth2Client.generateAuthUrl({
         access_type: 'offline',
-        scope: ['email', 'profile', 'https://www.googleapis.com/auth/calendar'],
-        prompt: 'consent'
+        scope: REQUIRED_SCOPES,
+        prompt: 'consent',
+        include_granted_scopes: true,
     });
-    
+
     Logger.info('Google OAuth flow initiated', {
         authUrl: authUrl.substring(0, 50) + '...',
-        scopes: ['email', 'profile', 'calendar']
+        scopes: REQUIRED_SCOPES
     });
-    
+
     res.redirect(authUrl);
 });
 
@@ -53,12 +60,19 @@ router.get('/google/callback', async (req, res) => {
         const { tokens } = await oauth2Client.getToken(code as string);
         oauth2Client.setCredentials(tokens);
         
-        Logger.apiCall('Google', 'getToken', { 
+        Logger.apiCall('Google', 'getToken', {
             hasAccessToken: !!tokens.access_token,
             hasRefreshToken: !!tokens.refresh_token,
             expiresAt: tokens.expiry_date
         });
-        
+
+        const grantedScopes = (tokens.scope ?? '').split(' ');
+        const missingScopes = REQUIRED_SCOPES.filter(s => !grantedScopes.includes(s));
+        if (missingScopes.length > 0) {
+            Logger.error('OAuth callback: token is missing required scopes', { missingScopes });
+            return res.redirect('http://localhost:3000/auth/callback?error=missing_scopes');
+        }
+
         // Get user info from Google
         Logger.debug('Fetching user info from Google');
         const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client });

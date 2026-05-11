@@ -6,6 +6,7 @@ interface AuthState {
     user: User | null;
     isAuthenticated: boolean;
     isLoading: boolean;
+    isInitialized: boolean;
     setIsAuthenticated: (isAuthenticated: boolean) => void;
 
     getUser: () => User | null;
@@ -17,24 +18,29 @@ interface AuthState {
 export const useAuthStore = create<AuthState>((set, get) => ({
     user: null,
     isAuthenticated: false,
-    isLoading: false,
+    // Start in a loading state so route guards wait for the first
+    // checkAuth() to complete before deciding to redirect.
+    isLoading: true,
+    isInitialized: false,
     setIsAuthenticated: (isAuthenticated) => set({ isAuthenticated }),
     getUser: () => get().user,
     setUser: (user) => set({ user, isAuthenticated: !!user }),
     logout: () => set({ user: null, isAuthenticated: false }),
-    
+
     checkAuth: async () => {
         set({ isLoading: true });
         try {
             const response = await api.get('/auth/user');
             if (response.data.user) {
                 set({ user: response.data.user, isAuthenticated: true });
+            } else {
+                set({ user: null, isAuthenticated: false });
             }
         } catch (error) {
             // If request fails (401), user is not authenticated
             set({ user: null, isAuthenticated: false });
         } finally {
-            set({ isLoading: false });
+            set({ isLoading: false, isInitialized: true });
         }
     },
 }));

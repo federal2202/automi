@@ -171,7 +171,7 @@ export default function AppSidebar() {
           "group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center"
         )}
       >
-        {isAuthenticated ? (
+        {isAuthenticated && (
           <div
             className={cn(
               "flex items-center gap-3 min-w-0",
@@ -195,22 +195,6 @@ export default function AppSidebar() {
                 {user?.email || "user@example.com"}
               </p>
             </div>
-          </div>
-        ) : (
-          <div
-            className={cn(
-              "flex items-center justify-center",
-              "h-9 w-full group-data-[collapsible=icon]:w-9"
-            )}
-          >
-            <button className="text-sm text-sidebar-foreground/70 hover:text-sidebar-foreground transition-colors">
-              <span className="group-data-[collapsible=icon]:hidden">
-                Sign In
-              </span>
-              <span className="hidden group-data-[collapsible=icon]:inline text-xs font-bold">
-                ?
-              </span>
-            </button>
           </div>
         )}
       </SidebarFooter>
