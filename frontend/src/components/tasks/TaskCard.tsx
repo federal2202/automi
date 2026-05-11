@@ -6,24 +6,37 @@ import { cn } from '@/utils/cn'
 interface TaskCardProps {
   task: Task
   onToggleDone: (id: string, isDone: boolean) => void
+  onOpen: () => void
   disabled?: boolean
 }
 
-export function TaskCard({ task, onToggleDone, disabled }: TaskCardProps) {
+export function TaskCard({ task, onToggleDone, onOpen, disabled }: TaskCardProps) {
   return (
     <div
+      role="button"
+      tabIndex={0}
+      onClick={onOpen}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onOpen()
+        }
+      }}
       className={cn(
-        'flex items-center justify-between gap-3 rounded-lg border-2 bg-white/5 px-4 py-2.5 backdrop-blur-sm transition-colors',
-        task.isDone ? 'border-green-500' : 'border-gray-300/40'
+        'group flex h-full cursor-pointer flex-col justify-between gap-4 rounded-xl border-2 p-5 backdrop-blur-sm transition-all',
+        'hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--green-nice)_50%,transparent)]',
+        task.isDone
+          ? 'bg-emerald-500/15 border-emerald-500/60 hover:bg-emerald-500/20'
+          : 'bg-red-500/15 border-red-500/50 hover:bg-red-500/20'
       )}
     >
-      <div className="flex items-center gap-2 min-w-0">
+      <div className="flex items-start gap-2 min-w-0">
         {task.isDone && (
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 20 20"
             fill="currentColor"
-            className="h-4 w-4 shrink-0 text-green-500"
+            className="mt-1 h-4 w-4 shrink-0 text-emerald-400"
             aria-hidden="true"
           >
             <path
@@ -33,30 +46,35 @@ export function TaskCard({ task, onToggleDone, disabled }: TaskCardProps) {
             />
           </svg>
         )}
-        <span
+        <h3
           className={cn(
-            'truncate text-sm font-medium',
-            task.isDone ? 'text-white/60 line-through' : 'text-white'
+            "font-['Space_Grotesk'] text-lg font-bold leading-tight tracking-[-0.5px] line-clamp-2",
+            task.isDone ? 'text-white/55 line-through' : 'text-[#e5e2e1]'
           )}
         >
           {task.title}
-        </span>
+        </h3>
       </div>
 
-      <button
-        type="button"
-        onClick={() => onToggleDone(task.id, !task.isDone)}
-        disabled={disabled}
-        className={cn(
-          'shrink-0 rounded-md px-2.5 py-1 text-xs font-medium transition-colors',
-          task.isDone
-            ? 'bg-white/10 text-white/80 hover:bg-white/15'
-            : 'bg-green-500/20 text-green-300 hover:bg-green-500/30',
-          disabled && 'opacity-50 cursor-not-allowed'
-        )}
-      >
-        {task.isDone ? 'Undo' : 'Mark as Done'}
-      </button>
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation()
+            onToggleDone(task.id, !task.isDone)
+          }}
+          disabled={disabled}
+          className={cn(
+            "rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-[1.1px] transition-colors font-['Plus_Jakarta_Sans']",
+            task.isDone
+              ? 'border-white/15 bg-white/10 text-white/80 hover:bg-white/15'
+              : 'border-emerald-500/60 bg-emerald-500/20 text-emerald-200 hover:bg-emerald-500/30',
+            disabled && 'opacity-50 cursor-not-allowed'
+          )}
+        >
+          {task.isDone ? 'Undo' : 'Mark as Done'}
+        </button>
+      </div>
     </div>
   )
 }
