@@ -450,3 +450,55 @@ PORT=3000
 - 🎨 Дополнительные UI улучшения
 
 ## ✅ МИССИЯ ВЫПОЛНЕНА - ПОЛНАЯ АУТЕНТИФИКАЦИЯ РЕАЛИЗОВАНА!
+
+---
+
+## Scheduling pivot — Step 1 (Periods backend) — 2026-05-13
+- Added `Period` model to `prisma/schema.prisma` (id cuid, userId FK → User onDelete: Cascade, title, startDate, endDate, createdAt, updatedAt; index on `[userId, startDate]`). Reverse relation `periods Period[]` added to User.
+- Migration: `20260513102407_add_period_model` (run via `pnpm exec prisma migrate dev --name add_period_model`).
+- New files:
+  - `src/controllers/periods.controller.ts` — list/getById/create/update/delete, all scoped to `req.user!.id`, ownership-checked, with title/date validation (endDate >= startDate).
+  - `src/routes/periods.ts` — JWT-protected `/periods` router.
+- Mounted in `src/index.ts` as `app.use('/periods', periodsRoutes)`.
+- Endpoints:
+  - `GET    /periods`        — list current user's periods (orderBy startDate desc)
+  - `GET    /periods/:id`    — single period (404 if not owned)
+  - `POST   /periods`        — create (201)
+  - `PATCH  /periods/:id`    — partial update with merged-candidate validation
+  - `DELETE /periods/:id`    — delete (204)
+
+## Step 1 — post-review refactors (2026-05-13)
+
+Cleanup pass after the 8/10 review. No behavioural changes to status codes, routes, or auth; this is internal hygiene.
+
+- `src/index.ts` — `/health` handler param `req` renamed to `_req` to clear the unused-parameter TS diagnostic.
+- New `src/utils/ownership.ts` — generic `assertOwnership(delegate, id, userId)` helper (typed via an `OwnershipDelegate<T>` interface, no `any`). Pre-empts duplication when Step 2 (RecurringActivity) and Step 3 (ActivityException) need the same `findFirst({ id, userId })` pattern.
+- `src/controllers/periods.controller.ts`:
+  - `getById` and `update` now go through `assertOwnership`.
+  - `delete` switched to a single-round-trip `deleteMany({ where: { id, userId } })` with `count === 0` -> 404. Removes the prior fetch-then-delete pair.
+  - `update` now writes ONLY the fields actually present in `req.body` (no more bumping `updatedAt` on a no-op PATCH and no more rewriting fields the client didn't touch). The merged candidate is still built — but only for VALIDATION, so `endDate >= startDate` keeps checking against the current row.
+  - Added strict unknown-field rejection on POST and PATCH (400 with the offending keys listed).
+  - Dropped the dead `instanceof Date` branch in `parseAndValidatePeriod`; error messages now specify ISO 8601.
+- `prisma/schema.prisma` — added a TODO comment near `Period` reminding Step 2 to declare `RecurringActivity -> Period` with `onDelete: Cascade`. User -> Period cascade is unchanged.
+- Typecheck: `npx tsc --noEmit --ignoreDeprecations 6.0` is clean (zero diagnostics after `prisma generate`).
+
+## Scheduling pivot — Step 2 (Recurring Activities backend) — 2026-05-13
+- Added `RecurringActivity` model to `prisma/schema.prisma`: id (cuid), periodId FK → Period (onDelete: Cascade), userId FK → User (onDelete: Cascade), title, dayOfWeek (Int 0..6), startTime/endTime (String "HH:mm"), timestamps. Indexes: `[userId, periodId]`, `[periodId, dayOfWeek]`. `@@map("recurring_activities")`.
+- Reverse relations added: `recurringActivities RecurringActivity[]` on both `User` and `Period`.
+- Removed the Step 2 TODO comment near `Period` — cascade is now wired (`onDelete: Cascade` on the RecurringActivity → Period relation).
+- Migration: `20260513105727_add_recurring_activity_model` (`pnpm exec prisma migrate dev --name add_recurring_activity_model`), followed by `prisma generate`.
+- New files:
+  - `src/controllers/recurring-activities.controller.ts` — list/getById/create/update/delete, all scoped by `userId` AND `periodId`, ownership-checked. Strict validation: title non-empty, dayOfWeek integer 0..6, startTime/endTime match `^([01]\d|2[0-3]):[0-5]\d$`, endTime > startTime (lexicographic on zero-padded HH:mm). Unknown body keys → 400 listing offenders. PATCH validates merged candidate, writes only present keys, no-op returns existing row. DELETE single-trip `deleteMany` scoped by `{id, userId, periodId}` → 404 on `count === 0`.
+  - `src/routes/recurring-activities.ts` — `Router({ mergeParams: true })` so `:periodId` propagates from the parent.
+- Mounting: nested under periods router via `periodsRouter.use('/:periodId/activities', recurringActivitiesRouter)`. `authenticateToken` on the parent covers the children (verified — no double mount, no separate auth needed).
+- Endpoints:
+  - `GET    /periods/:periodId/activities`       — list (orderBy dayOfWeek asc, then startTime asc)
+  - `GET    /periods/:periodId/activities/:id`   — single
+  - `POST   /periods/:periodId/activities`       — create (201). `periodId` taken from URL, never body.
+  - `PATCH  /periods/:periodId/activities/:id`   — partial update
+  - `DELETE /periods/:periodId/activities/:id`   — delete (204)
+- Every handler first verifies the parent period belongs to `req.user!.id` via `assertOwnership(prisma.period, periodId, userId)` (404 if not). All activity queries are scoped by `userId` AND `periodId`.
+- Typecheck: `npx tsc --noEmit --ignoreDeprecations 6.0` clean.
+
+## Step 2 — post-review polish (2026-05-13)
+- Extracted shared request-validation helpers to `src/utils/request-validation.ts`: `rejectUnknownKeys(body, allowed)` returns the offending keys (controllers compose the existing `Unknown fields: …. Allowed: …` 400 response themselves so wire format is unchanged), and `requireParam(value, name)` narrows `req.params.*` from `string | undefined` to `string` and throws on missing. Refactored `periods.controller.ts` and `recurring-activities.controller.ts` to use both — no more duplicated unknown-key logic, no more `as string` casts on route params. Behaviour, status codes, and validation order are identical. Typecheck clean.

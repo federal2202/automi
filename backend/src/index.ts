@@ -7,6 +7,7 @@ import express from 'express';
   import authRoutes from './routes/auth';      
   import calendarRoutes from './routes/calendar';
   import aiRoutes from './routes/tasks';
+  import periodsRoutes from './routes/periods';
 
   import { errorHandler } from './middleware/errorHandler';
   import { requestLogger, Logger } from './middleware/logger';
@@ -36,10 +37,11 @@ import express from 'express';
   app.use('/auth', authRoutes);
   app.use('/calendar', calendarRoutes);
   app.use('/tasks', aiRoutes);
+  app.use('/periods', periodsRoutes);
 
 
   // Health check (уже есть)
-  app.get('/health', (req, res) => {
+  app.get('/health', (_req, res) => {
       res.status(200).json({ status: 'ok' });
   })
 

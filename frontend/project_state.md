@@ -1,5 +1,27 @@
 # NotebookLM Project State Documentation
 
+**Step 2 polish (2026-05-13)** — `PeriodCard` now wraps its body in `next/link` `Link` (cmd-click/middle-click opens detail in a new tab); Edit/Delete buttons are sibling absolute-positioned overlays (not nested in the anchor) and keep `stopPropagation`. Removed manual `role="link"`, `tabIndex`, `onClick`, `onKeyDown` (next/link gives this for free); focus ring moved to `focus-within` on the wrapper. Detail page's "Back to periods" already uses `next/link`. typecheck + eslint clean.
+
+**Step 2 update (2026-05-13)** — Recurring Activities (frontend):
+- New detail route `app/(dashboard)/dashboard/periods/[id]/page.tsx`. Reads `id` via `useParams()`. Header has a back link, the period title + UTC-safe date range, and an "Add activity" button.
+- Activities listed grouped by day of week. Display order: **Mon → Sun** (`WEEK_DISPLAY_ORDER = [1,2,3,4,5,6,0]`). Persisted ints follow JS `0=Sun..6=Sat`. Within each day, sorted by `startTime` asc (lex compare works because times are zero-padded `HH:mm`).
+- `PeriodCard` is now a clickable link to the detail page (role=link + Enter/Space keyboard nav + focus ring). Edit/Delete buttons `stopPropagation` so they don't navigate. Date-formatting helpers extracted to `src/utils/period-dates.ts` (`formatPeriodRange`, `daysBetween`, `parseISODateUTC`).
+- `ConfirmDeleteDialog` extended with optional `description` prop so the same component can be reused for activities (default text still references periods).
+- New files: `src/types/activity.ts` (`DAYS_OF_WEEK`, `DAYS_OF_WEEK_LONG`, `WEEK_DISPLAY_ORDER`, `RecurringActivity`, `CreateActivityInput`, `UpdateActivityInput = CreateActivityInput`), `src/services/activities.service.ts` (named exports: `getActivities`, `getActivityById`, `createActivity`, `updateActivity`, `deleteActivity`), `src/utils/period-dates.ts`, `src/components/activities/RecurringActivityCard.tsx` (memoized), `src/components/activities/RecurringActivityFormDialog.tsx`.
+- Form validates: title required; `endTime > startTime` (lex compare on `HH:mm`); `dayOfWeek` is an int 0..6. `aria-invalid` + `aria-describedby` wired to a single error region (mirrors `PeriodFormDialog`).
+- React Query: `staleTime: 30_000` on both `period` and `activities` queries; mutations invalidate the activities cache. No mock data; fetch failures render error state with Retry.
+
+**Latest update (2026-05-13)**: Added Periods page at `/dashboard/periods` (list, create/edit dialog, delete) wired to `/periods` via the existing axios client. Sidebar third tab renamed from "Habits" → "Periods" (icon switched from `Target` to `CalendarRange`, href → `/dashboard/periods`). New files: `src/app/(dashboard)/dashboard/periods/page.tsx`, `src/components/periods/PeriodCard.tsx`, `src/components/periods/PeriodFormDialog.tsx`, `src/services/periods.service.ts`, `src/types/period.ts`. No mock data — fetch failures render an error state with retry.
+
+**Refactor pass (2026-05-13)** — addressed review feedback before Step 2:
+- `PeriodFormDialog`: timezone-safe date round-trip via `slice(0,10)` and `${YYYY-MM-DD}T00:00:00.000Z` (no more `new Date(...)` shifts); `min`/`max` constraints across both date inputs; `aria-invalid` + `aria-describedby` wired to a single error region; arbitrary-value `font-['…']` classes replaced with `font-space-grotesk` / `font-jakarta`.
+- `PeriodCard`: wrapped in `React.memo`; `daysBetween` returns `null` when `end < start` instead of clamping to 1; hardcoded hex colors replaced with `text-text-primary` / `text-text-muted` tokens.
+- `types/period.ts`: `UpdatePeriodInput = CreatePeriodInput` (not `Partial<…>`) — the form submits the full record so no cast needed in the page.
+- `periods/page.tsx`: replaced `window.confirm` with new `ConfirmDeleteDialog` (custom Dialog — we don't ship `@radix-ui/react-alert-dialog`); React Query gets `staleTime: 30_000`; mutations invalidate the cache instead of writing partial server-derived state via `setQueryData`; `openCreate`/`openEdit`/`requestDelete` are `useCallback`-stabilized; `extractAxiosErrorMessage` hoisted to `src/utils/api-error.ts` for Step 2/3 reuse.
+- `app-sidebar.tsx`: `isActive` now derives from `usePathname()` (exact match or descendant); `<a href>` swapped for `next/link` to preserve React Query cache and Zustand state across nav.
+- `globals.css`: added `--bg-surface` / `--text-primary` / `--text-muted` CSS vars and registered matching utilities through `@theme inline` (`bg-bg-surface`, `text-text-primary`, `text-text-muted`).
+- New files: `src/utils/api-error.ts`, `src/components/periods/ConfirmDeleteDialog.tsx`.
+
 **Generated**: 2026-04-20  
 **Project Version**: Authentication Integration Phase  
 **Quality Status**: Ready for Authentication Implementation  

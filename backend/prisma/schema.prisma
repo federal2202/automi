@@ -20,8 +20,44 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   tasks        Task[]
+  periods      Period[]
+  recurringActivities RecurringActivity[]
 
   @@map("users")
+}
+
+model Period {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  startDate DateTime
+  endDate   DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recurringActivities RecurringActivity[]
+
+  @@index([userId, startDate])
+  @@map("periods")
+}
+
+model RecurringActivity {
+  id        String   @id @default(cuid())
+  periodId  String
+  userId    String
+  title     String
+  dayOfWeek Int
+  startTime String
+  endTime   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  period    Period   @relation(fields: [periodId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, periodId])
+  @@index([periodId, dayOfWeek])
+  @@map("recurring_activities")
 }
 
 model Task {

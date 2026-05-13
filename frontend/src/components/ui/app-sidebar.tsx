@@ -1,5 +1,7 @@
 "use client"
 
+import Link from "next/link"
+import { usePathname } from "next/navigation"
 import Logo from "../shared/Logo"
 import { cn } from "@/utils/cn"
 import { useAuthStore } from "@/stores/authStore"
@@ -17,7 +19,7 @@ import {
 import {
   Calendar,
   CheckSquare,
-  Target,
+  CalendarRange,
   Settings,
   Plus,
   Menu,
@@ -28,33 +30,39 @@ export default function AppSidebar() {
   const { toggleSidebar, state } = useSidebar()
   const { user, isAuthenticated } = useAuthStore()
   const collapsed = state === "collapsed"
+  const pathname = usePathname()
 
   const navigationItems = [
     {
       title: "Calendar",
       icon: Calendar,
       url: "/dashboard/calendar",
-      isActive: true,
     },
     {
       title: "Tasks",
       icon: CheckSquare,
       url: "/dashboard/tasks",
-      isActive: false,
     },
     {
-      title: "Habits",
-      icon: Target,
-      url: "/dashboard/habits",
-      isActive: false,
+      title: "Periods",
+      icon: CalendarRange,
+      url: "/dashboard/periods",
     },
     {
       title: "Settings",
       icon: Settings,
       url: "/dashboard/settings",
-      isActive: false,
     },
   ]
+
+  // Active = exact match OR a descendant route under the tab's URL (so
+  // `/dashboard/periods/abc123` still highlights "Periods"). `pathname`
+  // is null only during the very first client render; treat that as no match.
+  const isItemActive = (url: string): boolean => {
+    if (!pathname) return false
+    if (pathname === url) return true
+    return pathname.startsWith(`${url}/`)
+  }
 
   return (
     <Sidebar
@@ -127,37 +135,41 @@ export default function AppSidebar() {
         <SidebarGroup className="px-0">
           <SidebarGroupContent>
             <SidebarMenu className="gap-1">
-              {navigationItems.map((item) => (
-                <SidebarMenuItem
-                  key={item.title}
-                  className={cn(
-                    "px-3 group-data-[collapsible=icon]:px-0",
-                    "group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center"
-                  )}
-                >
-                  <a
-                    href={item.url}
-                    title={item.title}
+              {navigationItems.map((item) => {
+                const active = isItemActive(item.url)
+                return (
+                  <SidebarMenuItem
+                    key={item.title}
                     className={cn(
-                      "relative flex items-center transition-colors duration-200",
-                      "h-10 w-full rounded-lg gap-3 px-3",
-                      "group-data-[collapsible=icon]:w-9 group-data-[collapsible=icon]:h-9",
-                      "group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0",
-                      item.isActive
-                        ? "bg-green-nice/15 text-green-nice"
-                        : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                      "px-3 group-data-[collapsible=icon]:px-0",
+                      "group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center"
                     )}
                   >
-                    {item.isActive && (
-                      <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-r-full bg-green-nice group-data-[collapsible=icon]:hidden" />
-                    )}
-                    <item.icon className="w-[18px] h-[18px] shrink-0" />
-                    <span className="text-sm font-medium font-space-grotesk uppercase tracking-wide group-data-[collapsible=icon]:hidden">
-                      {item.title}
-                    </span>
-                  </a>
-                </SidebarMenuItem>
-              ))}
+                    <Link
+                      href={item.url}
+                      title={item.title}
+                      aria-current={active ? "page" : undefined}
+                      className={cn(
+                        "relative flex items-center transition-colors duration-200",
+                        "h-10 w-full rounded-lg gap-3 px-3",
+                        "group-data-[collapsible=icon]:w-9 group-data-[collapsible=icon]:h-9",
+                        "group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0",
+                        active
+                          ? "bg-green-nice/15 text-green-nice"
+                          : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                      )}
+                    >
+                      {active && (
+                        <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-r-full bg-green-nice group-data-[collapsible=icon]:hidden" />
+                      )}
+                      <item.icon className="w-[18px] h-[18px] shrink-0" />
+                      <span className="text-sm font-medium font-space-grotesk uppercase tracking-wide group-data-[collapsible=icon]:hidden">
+                        {item.title}
+                      </span>
+                    </Link>
+                  </SidebarMenuItem>
+                )
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

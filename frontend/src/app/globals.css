@@ -29,6 +29,11 @@
   --sidebar-accent: #171717;
   --sidebar-accent-foreground: #ededed;
   --sidebar-ring: #ededed;
+
+  /* Surface + text tokens (periods + future feature pages) */
+  --bg-surface: #0e0e0e;
+  --text-primary: #e5e2e1;
+  --text-muted: #6b7280;
 }
 
 @theme inline {
@@ -56,6 +61,9 @@
   --font-space-grotesk: var(--font-space-grotesk);
   --font-sans: var(--font-jakarta);
   --font-display: var(--font-space-grotesk);
+  --color-bg-surface: var(--bg-surface);
+  --color-text-primary: var(--text-primary);
+  --color-text-muted: var(--text-muted);
 }
 
 body {
