@@ -21,6 +21,12 @@ interface ConfirmDeleteDialogProps {
   confirmLabel?: string
   /** Optional override of the body text after the bolded item label. */
   description?: string
+  /**
+   * Label shown on the destructive button while the mutation is in flight.
+   * Override when the operation fans out to Google Calendar and may take
+   * several seconds (so the user understands the wait).
+   */
+  pendingLabel?: string
   isPending?: boolean
   onConfirm: () => void
 }
@@ -40,6 +46,7 @@ export function ConfirmDeleteDialog({
   title = 'Delete period',
   confirmLabel = 'Delete',
   description = 'This permanently removes the period and any recurring activities attached to it.',
+  pendingLabel = 'Deleting...',
   isPending,
   onConfirm,
 }: ConfirmDeleteDialogProps) {
@@ -94,7 +101,17 @@ export function ConfirmDeleteDialog({
               isPending && 'opacity-60 cursor-not-allowed'
             )}
           >
-            {isPending ? 'Deleting...' : confirmLabel}
+            {isPending ? (
+              <span className="inline-flex items-center gap-2">
+                <span
+                  aria-hidden
+                  className="inline-block h-3.5 w-3.5 rounded-full border-2 border-red-200/40 border-t-red-200 animate-spin"
+                />
+                {pendingLabel}
+              </span>
+            ) : (
+              confirmLabel
+            )}
           </button>
         </DialogFooter>
       </DialogContent>

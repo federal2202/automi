@@ -166,6 +166,12 @@ function PeriodFormBody({
             />
           </div>
 
+          {isEdit && (
+            <p className="text-[11px] text-text-muted tracking-[0.4px] font-jakarta -mb-2">
+              Changing dates will sync Google Calendar events accordingly.
+            </p>
+          )}
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="flex flex-col gap-2">
               <Label
@@ -243,13 +249,19 @@ function PeriodFormBody({
                 isSubmitting && 'opacity-60 cursor-not-allowed'
               )}
             >
-              {isSubmitting
-                ? isEdit
-                  ? 'Saving...'
-                  : 'Creating...'
-                : isEdit
-                  ? 'Save Changes'
-                  : 'Create Period'}
+              {isSubmitting ? (
+                <span className="inline-flex items-center gap-2">
+                  <span
+                    aria-hidden
+                    className="inline-block h-3.5 w-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin"
+                  />
+                  {isEdit ? 'Syncing to Google Calendar...' : 'Creating...'}
+                </span>
+              ) : isEdit ? (
+                'Save Changes'
+              ) : (
+                'Create Period'
+              )}
             </button>
         </DialogFooter>
       </form>

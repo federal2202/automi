@@ -14,7 +14,7 @@ import { Label } from '@/components/ui/label'
 import { cn } from '@/utils/cn'
 import {
   CreateActivityInput,
-  DAYS_OF_WEEK_LONG,
+  DAYS_OF_WEEK,
   RecurringActivity,
   WEEK_DISPLAY_ORDER,
 } from '@/types/activity'
@@ -74,10 +74,17 @@ function RecurringActivityFormBody({
 
   const [title, setTitle] = useState(() => initialActivity?.title ?? '')
   // Default to Monday (1) for new activities — matches the Mon-first display
-  // order used on the detail page.
-  const [dayOfWeek, setDayOfWeek] = useState<number>(
-    () => initialActivity?.dayOfWeek ?? 1
+  // order used on the detail page. On edit, pre-select the activity's existing
+  // days.
+  const [daysOfWeek, setDaysOfWeek] = useState<number[]>(
+    () => initialActivity?.daysOfWeek ?? [1]
   )
+
+  const toggleDay = (dow: number) => {
+    setDaysOfWeek((prev) =>
+      prev.includes(dow) ? prev.filter((d) => d !== dow) : [...prev, dow]
+    )
+  }
   const [startTime, setStartTime] = useState(
     () => initialActivity?.startTime ?? '09:00'
   )
@@ -104,14 +111,14 @@ function RecurringActivityFormBody({
       setValidationError('End time must be after start time.')
       return
     }
-    if (!Number.isInteger(dayOfWeek) || dayOfWeek < 0 || dayOfWeek > 6) {
-      setValidationError('Day of week is invalid.')
+    if (daysOfWeek.length === 0) {
+      setValidationError('Select at least one day.')
       return
     }
 
     await onSubmit({
       title: trimmed,
-      dayOfWeek,
+      daysOfWeek,
       startTime,
       endTime,
     })
@@ -153,32 +160,42 @@ function RecurringActivityFormBody({
         </div>
 
         <div className="flex flex-col gap-2">
-          <Label
-            htmlFor="activity-day"
+          <span
+            id="activity-days-label"
             className="text-[11px] uppercase tracking-[1.1px] text-white/70 font-jakarta"
           >
-            Day of Week
-          </Label>
-          <select
-            id="activity-day"
-            value={dayOfWeek}
-            onChange={(e) => setDayOfWeek(Number(e.target.value))}
-            disabled={isSubmitting}
-            aria-invalid={hasError || undefined}
+            Days of Week
+          </span>
+          <div
+            role="group"
+            aria-labelledby="activity-days-label"
             aria-describedby={hasError ? errorRegionId : undefined}
-            className={cn(
-              'h-10 rounded-md border border-white/10 bg-white/5 px-3 text-sm text-white',
-              'font-jakarta',
-              'focus:outline-none focus:ring-2 focus:ring-green-nice/50',
-              isSubmitting && 'opacity-50 cursor-not-allowed'
-            )}
+            className="flex flex-wrap gap-2"
           >
-            {WEEK_DISPLAY_ORDER.map((dow) => (
-              <option key={dow} value={dow} className="bg-bg-surface text-white">
-                {DAYS_OF_WEEK_LONG[dow]}
-              </option>
-            ))}
-          </select>
+            {WEEK_DISPLAY_ORDER.map((dow) => {
+              const isActive = daysOfWeek.includes(dow)
+              return (
+                <button
+                  key={dow}
+                  type="button"
+                  onClick={() => toggleDay(dow)}
+                  disabled={isSubmitting}
+                  aria-pressed={isActive}
+                  className={cn(
+                    'min-w-[44px] rounded-full border px-3 py-1.5 text-xs font-bold',
+                    'font-space-grotesk uppercase tracking-wide transition-colors',
+                    'focus:outline-none focus-visible:ring-2 focus-visible:ring-green-nice/60',
+                    isActive
+                      ? 'bg-green-nice border-green-nice text-white'
+                      : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:text-white',
+                    isSubmitting && 'opacity-50 cursor-not-allowed'
+                  )}
+                >
+                  {DAYS_OF_WEEK[dow]}
+                </button>
+              )
+            })}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -258,13 +275,19 @@ function RecurringActivityFormBody({
               isSubmitting && 'opacity-60 cursor-not-allowed'
             )}
           >
-            {isSubmitting
-              ? isEdit
-                ? 'Saving...'
-                : 'Adding...'
-              : isEdit
-                ? 'Save Changes'
-                : 'Add Activity'}
+            {isSubmitting ? (
+              <span className="inline-flex items-center gap-2">
+                <span
+                  aria-hidden
+                  className="inline-block h-3.5 w-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin"
+                />
+                Syncing to Google Calendar...
+              </span>
+            ) : isEdit ? (
+              'Save Changes'
+            ) : (
+              'Add Activity'
+            )}
           </button>
         </DialogFooter>
       </form>

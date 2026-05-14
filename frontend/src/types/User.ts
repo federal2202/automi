@@ -3,4 +3,6 @@ export interface User {
     email: string;
     name: string;
     picture?: string;
+    /** IANA timezone string, e.g. "Europe/Warsaw". Server-authoritative. */
+    timezone?: string;
 }

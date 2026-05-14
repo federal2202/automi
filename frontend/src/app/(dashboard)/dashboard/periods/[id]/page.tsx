@@ -23,6 +23,12 @@ import { RecurringActivityFormDialog } from '@/components/activities/RecurringAc
 import { ConfirmDeleteDialog } from '@/components/periods/ConfirmDeleteDialog'
 import { extractAxiosErrorMessage } from '@/utils/api-error'
 import { formatPeriodRange } from '@/utils/period-dates'
+import { googleCalendarQueryKeys } from '@/hooks/calendar/useGoogleCalendar'
+import {
+  toastActivityCreate,
+  toastActivityDelete,
+  toastActivityUpdate,
+} from '@/utils/activity-sync-toast'
 import { cn } from '@/utils/cn'
 
 /**
@@ -84,11 +90,13 @@ export default function PeriodDetailPage() {
   const createMutation = useMutation({
     mutationFn: (input: CreateActivityInput) =>
       createActivity(periodId, input),
-    onSuccess: () => {
+    onSuccess: (response) => {
       void invalidateActivities()
+      void queryClient.invalidateQueries({ queryKey: googleCalendarQueryKeys.events() })
       setIsFormOpen(false)
       setEditingActivity(null)
       setFormError(null)
+      toastActivityCreate(response.sync)
     },
     onError: (err) => {
       setFormError(extractAxiosErrorMessage(err, 'Failed to create activity.'))
@@ -98,11 +106,13 @@ export default function PeriodDetailPage() {
   const updateMutation = useMutation({
     mutationFn: ({ id, input }: { id: string; input: CreateActivityInput }) =>
       updateActivity(periodId, id, input),
-    onSuccess: () => {
+    onSuccess: (response) => {
       void invalidateActivities()
+      void queryClient.invalidateQueries({ queryKey: googleCalendarQueryKeys.events() })
       setIsFormOpen(false)
       setEditingActivity(null)
       setFormError(null)
+      toastActivityUpdate(response.sync)
     },
     onError: (err) => {
       setFormError(extractAxiosErrorMessage(err, 'Failed to update activity.'))
@@ -114,9 +124,11 @@ export default function PeriodDetailPage() {
     onMutate: () => {
       setActionError(null)
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       void invalidateActivities()
+      void queryClient.invalidateQueries({ queryKey: googleCalendarQueryKeys.events() })
       setPendingDelete(null)
+      toastActivityDelete(result)
     },
     onError: (err) => {
       setActionError(
@@ -160,8 +172,10 @@ export default function PeriodDetailPage() {
   }, [pendingDelete, deleteMutation])
 
   /**
-   * Bucket activities by `dayOfWeek` (0..6) and sort each bucket by start time.
-   * Times are zero-padded `HH:mm`, so lexicographic compare matches chronological.
+   * Bucket activities by each entry in `daysOfWeek` (0..6) and sort each bucket
+   * by start time. An activity that recurs on multiple days appears in each of
+   * its day buckets. Times are zero-padded `HH:mm`, so lexicographic compare
+   * matches chronological.
    */
   const grouped = useMemo(() => {
     const buckets: Record<number, RecurringActivity[]> = {
@@ -175,9 +189,11 @@ export default function PeriodDetailPage() {
     }
     if (!activities) return buckets
     for (const a of activities) {
-      if (a.dayOfWeek >= 0 && a.dayOfWeek <= 6) {
-        buckets[a.dayOfWeek].push(a)
-      }
+      a.daysOfWeek.forEach((dow) => {
+        if (dow >= 0 && dow <= 6) {
+          buckets[dow].push(a)
+        }
+      })
     }
     for (const dow of Object.keys(buckets)) {
       buckets[Number(dow)].sort((x, y) => x.startTime.localeCompare(y.startTime))
@@ -357,9 +373,10 @@ export default function PeriodDetailPage() {
           if (!open) setPendingDelete(null)
         }}
         title="Delete activity"
-        description="This permanently removes the recurring rule from this period."
+        description="This permanently removes the recurring rule from this period and any Google Calendar events generated for it."
         itemLabel={pendingDelete?.title ?? ''}
         isPending={deleteMutation.isPending}
+        pendingLabel="Syncing to Google Calendar..."
         onConfirm={confirmDelete}
       />
     </div>

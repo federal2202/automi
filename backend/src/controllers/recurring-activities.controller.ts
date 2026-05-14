@@ -3,43 +3,55 @@ import { prisma } from "../lib/prisma";
 import { AuthRequest } from "../types/auth";
 import { assertOwnership } from "../utils/ownership";
 import { rejectUnknownKeys, requireParam } from "../utils/request-validation";
+import {
+  generateEventsForActivity,
+  deleteEventsForActivity,
+  updateEventsForActivity,
+} from "../services/calendar-sync.service";
 
 interface ActivityInput {
   title?: unknown;
-  dayOfWeek?: unknown;
+  daysOfWeek?: unknown;
   startTime?: unknown;
   endTime?: unknown;
 }
 
 interface ParsedActivity {
   title: string;
-  dayOfWeek: number;
+  daysOfWeek: number[];
   startTime: string;
   endTime: string;
 }
 
-const ALLOWED_KEYS = ["title", "dayOfWeek", "startTime", "endTime"] as const;
+const ALLOWED_KEYS = ["title", "daysOfWeek", "startTime", "endTime"] as const;
 
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 const parseAndValidateActivity = (
   body: ActivityInput,
 ): { ok: true; value: ParsedActivity } | { ok: false; error: string } => {
-  const { title, dayOfWeek, startTime, endTime } = body ?? {};
+  const { title, daysOfWeek, startTime, endTime } = body ?? {};
 
   if (typeof title !== "string" || title.trim().length === 0) {
     return { ok: false, error: "title is required and must be a non-empty string" };
   }
 
   if (
-    typeof dayOfWeek !== "number" ||
-    !Number.isInteger(dayOfWeek) ||
-    dayOfWeek < 0 ||
-    dayOfWeek > 6
+    !Array.isArray(daysOfWeek) ||
+    daysOfWeek.length === 0 ||
+    !daysOfWeek.every((d) => Number.isInteger(d) && d >= 0 && d <= 6)
   ) {
     return {
       ok: false,
-      error: "dayOfWeek is required and must be an integer between 0 (Sunday) and 6 (Saturday)",
+      error: "daysOfWeek must be a non-empty array of integers 0-6 (0 = Sunday, 6 = Saturday)",
+    };
+  }
+
+  // Reject duplicates.
+  if (new Set(daysOfWeek).size !== daysOfWeek.length) {
+    return {
+      ok: false,
+      error: "daysOfWeek must not contain duplicate values",
     };
   }
 
@@ -64,7 +76,7 @@ const parseAndValidateActivity = (
     ok: true,
     value: {
       title: title.trim(),
-      dayOfWeek,
+      daysOfWeek: daysOfWeek as number[],
       startTime,
       endTime,
     },
@@ -95,7 +107,7 @@ export const getRecurringActivities = async (
 
     const activities = await prisma.recurringActivity.findMany({
       where: { userId, periodId },
-      orderBy: [{ dayOfWeek: "asc" }, { startTime: "asc" }],
+      orderBy: [{ startTime: "asc" }],
     });
     res.json(activities);
   } catch (error) {
@@ -158,8 +170,8 @@ export const createRecurringActivity = async (
   }
 
   try {
-    const owns = await ensurePeriodOwned(periodId, userId);
-    if (!owns) {
+    const period = await assertOwnership(prisma.period, periodId, userId);
+    if (!period) {
       res.status(404).json({ error: "Period not found" });
       return;
     }
@@ -169,12 +181,16 @@ export const createRecurringActivity = async (
         userId,
         periodId,
         title: parsed.value.title,
-        dayOfWeek: parsed.value.dayOfWeek,
+        daysOfWeek: parsed.value.daysOfWeek,
         startTime: parsed.value.startTime,
         endTime: parsed.value.endTime,
       },
     });
-    res.status(201).json(created);
+
+    // Best-effort Google Calendar sync — never rolls back the DB row.
+    const sync = await generateEventsForActivity(userId, created, period);
+
+    res.status(201).json({ ...created, sync });
   } catch (error) {
     console.error("Failed to create recurring activity:", error);
     res.status(500).json({ error: "Failed to create recurring activity" });
@@ -199,8 +215,8 @@ export const updateRecurringActivity = async (
   }
 
   try {
-    const owns = await ensurePeriodOwned(periodId, userId);
-    if (!owns) {
+    const period = await assertOwnership(prisma.period, periodId, userId);
+    if (!period) {
       res.status(404).json({ error: "Period not found" });
       return;
     }
@@ -217,7 +233,7 @@ export const updateRecurringActivity = async (
     // Build merged candidate for VALIDATION only.
     const candidate: ActivityInput = {
       title: body.title !== undefined ? body.title : existing.title,
-      dayOfWeek: body.dayOfWeek !== undefined ? body.dayOfWeek : existing.dayOfWeek,
+      daysOfWeek: body.daysOfWeek !== undefined ? body.daysOfWeek : existing.daysOfWeek,
       startTime: body.startTime !== undefined ? body.startTime : existing.startTime,
       endTime: body.endTime !== undefined ? body.endTime : existing.endTime,
     };
@@ -231,17 +247,17 @@ export const updateRecurringActivity = async (
     // WRITE only fields the client actually sent.
     const data: {
       title?: string;
-      dayOfWeek?: number;
+      daysOfWeek?: number[];
       startTime?: string;
       endTime?: string;
     } = {};
     if (body.title !== undefined) data.title = parsed.value.title;
-    if (body.dayOfWeek !== undefined) data.dayOfWeek = parsed.value.dayOfWeek;
+    if (body.daysOfWeek !== undefined) data.daysOfWeek = parsed.value.daysOfWeek;
     if (body.startTime !== undefined) data.startTime = parsed.value.startTime;
     if (body.endTime !== undefined) data.endTime = parsed.value.endTime;
 
     if (Object.keys(data).length === 0) {
-      res.json(existing);
+      res.json({ ...existing, sync: { updated: 0, deleted: 0, created: 0, errors: [] } });
       return;
     }
 
@@ -250,7 +266,10 @@ export const updateRecurringActivity = async (
       data,
     });
 
-    res.json(updated);
+    // Best-effort Google Calendar sync.
+    const sync = await updateEventsForActivity(userId, existing, updated, period);
+
+    res.json({ ...updated, sync });
   } catch (error) {
     console.error("Failed to update recurring activity:", error);
     res.status(500).json({ error: "Failed to update recurring activity" });
@@ -272,16 +291,30 @@ export const deleteRecurringActivity = async (
       return;
     }
 
-    const result = await prisma.recurringActivity.deleteMany({
+    // Verify activity exists and is owned before doing anything.
+    const existing = await prisma.recurringActivity.findFirst({
       where: { id, userId, periodId },
     });
 
-    if (result.count === 0) {
+    if (!existing) {
       res.status(404).json({ error: "Recurring activity not found" });
       return;
     }
 
-    res.status(204).send();
+    // Delete Google Calendar events BEFORE the DB row (Cascade can't reach Google).
+    const sync = await deleteEventsForActivity(userId, id);
+
+    // Always proceed with DB delete regardless of Google API outcome.
+    await prisma.recurringActivity.deleteMany({
+      where: { id, userId, periodId },
+    });
+
+    if (sync.errors.length > 0) {
+      // Partial Google failure — surface errors but confirm DB row is gone.
+      res.status(200).json({ id, sync: { deleted: sync.deleted, errors: sync.errors } });
+    } else {
+      res.status(204).send();
+    }
   } catch (error) {
     console.error("Failed to delete recurring activity:", error);
     res.status(500).json({ error: "Failed to delete recurring activity" });

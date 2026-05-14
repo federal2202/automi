@@ -1,5 +1,34 @@
 # NotebookLM Project State Documentation
 
+**RecurringActivity multi-day support (daysOfWeek array) (2026-05-14)** — Activity form now uses a 7-chip multi-select; types, list, and calendar transforms updated to handle `daysOfWeek` as an int array.
+- Files changed:
+  - `src/types/activity.ts` (`dayOfWeek: number` → `daysOfWeek: number[]` on `RecurringActivity` and `CreateActivityInput`; doc comments updated)
+  - `src/components/activities/RecurringActivityFormDialog.tsx` (replaced `<select>` day picker with a 7-chip multi-select rendered in `WEEK_DISPLAY_ORDER`; default `[1]` for create, `initialActivity.daysOfWeek` on edit; validation requires non-empty array; submits `daysOfWeek`)
+  - `src/components/activities/RecurringActivityCard.tsx` (renders comma-separated Mon→Sun day labels under the time row when the activity recurs on >1 day)
+  - `src/app/(dashboard)/dashboard/periods/[id]/page.tsx` (bucketing now fans out each activity across every day in its `daysOfWeek`, so a multi-day rule appears in each of its selected day sections)
+  - `src/hooks/calendar/useEventGeneration.ts` (`eventGenerationUtils.createEvent` signature: `dayOfWeek: number` → `daysOfWeek: number[]`, returns `CalendarEvent[]`; `createRecurringEvent` delegates to it)
+  - `src/utils/activity-sync-toast.ts` (comment updated `dayOfWeek` → `daysOfWeek`)
+- `pnpm tsc --noEmit` clean.
+
+**Fix — calendar cache invalidation on activity/period mutations (2026-05-14)** — Mutations on activities and periods now invalidate the `googleCalendarQueryKeys.events()` React Query key so the in-app calendar refreshes immediately after Google Calendar sync.
+- Files changed:
+  - `src/app/(dashboard)/dashboard/periods/[id]/page.tsx` (activity create / update / delete onSuccess)
+  - `src/app/(dashboard)/dashboard/periods/page.tsx` (period create / update / delete onSuccess)
+
+**Steps 4-8 — Google Calendar lifecycle sync (frontend half) (2026-05-14)** — backend now auto-syncs activity/period CRUD to Google Calendar; the frontend surfaces it without inventing UI:
+- `User` type gained optional `timezone: string` (`src/types/User.ts`).
+- `authStore` gained `syncDeviceTimezone()` action: reads `Intl.DateTimeFormat().resolvedOptions().timeZone`, PATCHes `/me/timezone` only when it diverges from `user.timezone`, merges the response into local state, and silently `console.warn`s on failure (never blocks the app).
+- `AuthInitializer` now runs `syncDeviceTimezone()` once after `isInitialized && user.id` flips truthy — deps intentionally pinned to `user?.id` to avoid loops when the action itself updates the user.
+- Installed `sonner@^2.0.7`. Mounted a single `<Toaster theme="dark" position="bottom-right" richColors closeButton />` in `(dashboard)/dashboard/layout.tsx` so toasts work across every dashboard route.
+- `services/activities.service.ts` response types extended with `sync` envelopes (`CreateSyncResult`, `UpdateSyncResult`, `DeleteSyncResult`). `deleteActivity` now normalizes 204 vs 200-with-errors into a discriminated `DeleteActivityResult = { kind: 'ok' } | { kind: 'partial', id, sync }` so callers don't have to inspect the HTTP status.
+- New `utils/activity-sync-toast.ts` centralizes the three toast branches per operation (success / partial-with-warning + `console.warn` of error detail / info when no occurrences). Update collapses `updated + created + deleted` into a single "N events synced" message so a `dayOfWeek` change still feels like one logical edit.
+- `periods/[id]/page.tsx` wires `toastActivityCreate/Update/Delete` into the React Query `onSuccess` of each activity mutation. Dialog still closes only after the response (no optimistic close), so the user sees the sync result land before the form disappears.
+- `RecurringActivityFormDialog` submit button now shows a spinner + `"Syncing to Google Calendar..."` copy while `isSubmitting` (5-15s waits for long periods).
+- `ConfirmDeleteDialog` extended with an optional `pendingLabel` prop + spinner inside the destructive button; used as `"Syncing to Google Calendar..."` for both activity delete and period delete confirmations.
+- `PeriodFormDialog`: subtle one-line helper text `"Changing dates will sync Google Calendar events accordingly."` appears only on edit, between the title field and date inputs. Save button uses the same spinner + sync copy treatment on edit.
+- Period delete confirmation copy updated to: `"This will also remove all Google Calendar events created for this period's activities. Continue?"`.
+- `pnpm tsc --noEmit` clean. `pnpm lint` clean for all files touched in this stage (pre-existing calendar/store lint issues unchanged).
+
 **Step 2 polish (2026-05-13)** — `PeriodCard` now wraps its body in `next/link` `Link` (cmd-click/middle-click opens detail in a new tab); Edit/Delete buttons are sibling absolute-positioned overlays (not nested in the anchor) and keep `stopPropagation`. Removed manual `role="link"`, `tabIndex`, `onClick`, `onKeyDown` (next/link gives this for free); focus ring moved to `focus-within` on the wrapper. Detail page's "Back to periods" already uses `next/link`. typecheck + eslint clean.
 
 **Step 2 update (2026-05-13)** — Recurring Activities (frontend):

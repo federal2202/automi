@@ -3,6 +3,10 @@ import { prisma } from "../lib/prisma";
 import { AuthRequest } from "../types/auth";
 import { assertOwnership } from "../utils/ownership";
 import { rejectUnknownKeys, requireParam } from "../utils/request-validation";
+import {
+  deleteEventsForPeriod,
+  syncPeriodDateRange,
+} from "../services/calendar-sync.service";
 
 interface PeriodInput {
   title?: unknown;
@@ -156,8 +160,7 @@ export const updatePeriod = async (req: AuthRequest, res: Response): Promise<voi
       return;
     }
 
-    // WRITE only the fields the client actually sent. Avoids bumping updatedAt
-    // on a no-op PATCH and avoids surprise rewrites of fields the user didn't touch.
+    // WRITE only the fields the client actually sent.
     const data: { title?: string; startDate?: Date; endDate?: Date } = {};
     if (body.title !== undefined) data.title = parsed.value.title;
     if (body.startDate !== undefined) data.startDate = parsed.value.startDate;
@@ -174,6 +177,22 @@ export const updatePeriod = async (req: AuthRequest, res: Response): Promise<voi
       data,
     });
 
+    // If date range changed, sync Calendar events for all activities in the period.
+    const dateRangeChanged =
+      body.startDate !== undefined || body.endDate !== undefined;
+    if (dateRangeChanged) {
+      // Fire-and-forget — do not await so date-range errors don't fail the HTTP response.
+      // Errors are logged server-side only (best-effort, same as activity sync).
+      syncPeriodDateRange(
+        req.user!.id,
+        updated,
+        existing.startDate,
+        existing.endDate,
+      ).catch((err) => {
+        console.error("syncPeriodDateRange failed:", err);
+      });
+    }
+
     res.json(updated);
   } catch (error) {
     console.error("Failed to update period:", error);
@@ -183,12 +202,23 @@ export const updatePeriod = async (req: AuthRequest, res: Response): Promise<voi
 
 export const deletePeriod = async (req: AuthRequest, res: Response): Promise<void> => {
   const id = requireParam(req.params.id, "id");
+  const userId = req.user!.id;
 
   try {
-    // Single-round-trip ownership-enforced delete: deleteMany scopes by userId
-    // and `count === 0` distinguishes "not found / not yours" from a real delete.
+    // Verify ownership before touching Google Calendar.
+    const existing = await assertOwnership(prisma.period, id, userId);
+    if (!existing) {
+      res.status(404).json({ error: "Period not found" });
+      return;
+    }
+
+    // Delete Google Calendar events for all activities in the period
+    // BEFORE the DB delete (Cascade can't reach Google).
+    await deleteEventsForPeriod(userId, id);
+
+    // Single-round-trip DB delete.
     const result = await prisma.period.deleteMany({
-      where: { id, userId: req.user!.id },
+      where: { id, userId },
     });
 
     if (result.count === 0) {

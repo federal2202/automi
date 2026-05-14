@@ -29,12 +29,17 @@ export function rejectUnknownKeys(
 }
 
 /**
- * Narrows `req.params.x` (typed as `string | undefined` under stricter
- * Express typings) to a guaranteed string. Throws if missing — which under
- * Express's matched-route guarantee should never happen, so this is purely
- * a typing aid that also catches programmer error (wrong param name in route).
+ * Narrows `req.params.x` (typed as `string | string[] | undefined` under
+ * Express 5 / newer @types/express typings — array shape comes from repeated
+ * keys in some matchers) to a guaranteed non-empty string. Throws if missing
+ * or array-shaped — which under Express's matched-route guarantee should never
+ * happen for our routes, so this is purely a typing aid that also catches
+ * programmer error (wrong param name in route).
  */
-export function requireParam(value: string | undefined, name: string): string {
+export function requireParam(
+  value: string | string[] | undefined,
+  name: string,
+): string {
   if (typeof value !== "string" || value.length === 0) {
     throw new Error(`Missing required route param: ${name}`);
   }

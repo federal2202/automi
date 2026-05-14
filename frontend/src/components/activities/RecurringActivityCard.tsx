@@ -2,7 +2,11 @@
 
 import { memo, useCallback } from 'react'
 import { Pencil, Trash2 } from 'lucide-react'
-import { RecurringActivity } from '@/types/activity'
+import {
+  DAYS_OF_WEEK,
+  RecurringActivity,
+  WEEK_DISPLAY_ORDER,
+} from '@/types/activity'
 import { cn } from '@/utils/cn'
 
 interface RecurringActivityCardProps {
@@ -24,6 +28,15 @@ function RecurringActivityCardImpl({
     [onDelete, activity]
   )
 
+  // Render recurring days in Mon→Sun display order (e.g. "Mon, Wed, Fri").
+  // Only meaningful when the activity recurs on more than one day; for a
+  // single-day rule the surrounding section header already shows the day.
+  const dayLabels = WEEK_DISPLAY_ORDER.filter((dow) =>
+    activity.daysOfWeek.includes(dow)
+  )
+    .map((dow) => DAYS_OF_WEEK[dow])
+    .join(', ')
+
   return (
     <div
       className={cn(
@@ -37,6 +50,9 @@ function RecurringActivityCardImpl({
         </h4>
         <p className="font-jakarta text-xs tracking-[0.5px] text-text-muted">
           {activity.startTime} – {activity.endTime}
+          {activity.daysOfWeek.length > 1 && (
+            <span className="ml-2 text-white/40">// {dayLabels}</span>
+          )}
         </p>
       </div>
 

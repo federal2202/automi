@@ -15,6 +15,7 @@ import { PeriodFormDialog } from '@/components/periods/PeriodFormDialog'
 import { ConfirmDeleteDialog } from '@/components/periods/ConfirmDeleteDialog'
 import { extractAxiosErrorMessage } from '@/utils/api-error'
 import { cn } from '@/utils/cn'
+import { googleCalendarQueryKeys } from '@/hooks/calendar/useGoogleCalendar'
 
 const PERIODS_QUERY_KEY = ['periods'] as const
 
@@ -53,6 +54,7 @@ export default function PeriodsPage() {
     mutationFn: (input: CreatePeriodInput) => createPeriod(input),
     onSuccess: () => {
       void invalidatePeriods()
+      void queryClient.invalidateQueries({ queryKey: googleCalendarQueryKeys.events() })
       setIsFormOpen(false)
       setEditingPeriod(null)
       setFormError(null)
@@ -72,6 +74,7 @@ export default function PeriodsPage() {
     }) => updatePeriod(id, input),
     onSuccess: () => {
       void invalidatePeriods()
+      void queryClient.invalidateQueries({ queryKey: googleCalendarQueryKeys.events() })
       setIsFormOpen(false)
       setEditingPeriod(null)
       setFormError(null)
@@ -88,6 +91,7 @@ export default function PeriodsPage() {
     },
     onSuccess: () => {
       void invalidatePeriods()
+      void queryClient.invalidateQueries({ queryKey: googleCalendarQueryKeys.events() })
       setPendingDelete(null)
     },
     onError: (err) => {
@@ -237,7 +241,9 @@ export default function PeriodsPage() {
           if (!open) setPendingDelete(null)
         }}
         itemLabel={pendingDelete?.title ?? ''}
+        description="This will also remove all Google Calendar events created for this period's activities. Continue?"
         isPending={deleteMutation.isPending}
+        pendingLabel="Syncing to Google Calendar..."
         onConfirm={confirmDelete}
       />
     </div>

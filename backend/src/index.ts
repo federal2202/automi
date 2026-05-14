@@ -8,6 +8,7 @@ import express from 'express';
   import calendarRoutes from './routes/calendar';
   import aiRoutes from './routes/tasks';
   import periodsRoutes from './routes/periods';
+  import meRoutes from './routes/me';
 
   import { errorHandler } from './middleware/errorHandler';
   import { requestLogger, Logger } from './middleware/logger';
@@ -38,6 +39,7 @@ import express from 'express';
   app.use('/calendar', calendarRoutes);
   app.use('/tasks', aiRoutes);
   app.use('/periods', periodsRoutes);
+  app.use('/me', meRoutes);
 
 
   // Health check (уже есть)

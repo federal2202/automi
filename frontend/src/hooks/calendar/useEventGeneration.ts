@@ -155,33 +155,37 @@ export const generateEventsForRange = (startDate: Date, endDate: Date): Calendar
  */
 export const eventGenerationUtils = {
   /**
-   * Generate a single event at a specific time
+   * Generate one event per day in the provided weekday list. Mirrors the
+   * persisted `daysOfWeek: number[]` shape so callers don't have to fan out
+   * a single-day helper themselves.
    */
   createEvent: (
     title: string,
-    dayOfWeek: number,
+    daysOfWeek: number[],
     hour: number,
     minute: number,
     duration: number,
     type: CalendarEvent['type'] = 'primary',
     description?: string
-  ): CalendarEvent => {
+  ): CalendarEvent[] => {
     const currentWeekStart = moment().startOf('week')
-    const startTime = moment(currentWeekStart).day(dayOfWeek).hour(hour).minute(minute)
-    const endTime = startTime.clone().add(duration, 'hours')
-    
-    return {
-      id: `${Date.now()}-${Math.random()}`,
-      title,
-      start: startTime.toDate(),
-      end: endTime.toDate(),
-      type,
-      description
-    }
+    return daysOfWeek.map((day, index) => {
+      const startTime = moment(currentWeekStart).day(day).hour(hour).minute(minute)
+      const endTime = startTime.clone().add(duration, 'hours')
+      return {
+        id: `${Date.now()}-${index}-${Math.random()}`,
+        title,
+        start: startTime.toDate(),
+        end: endTime.toDate(),
+        type,
+        description,
+      }
+    })
   },
 
   /**
-   * Generate recurring events
+   * Generate recurring events across multiple weekdays. Delegates to
+   * `createEvent`, which now itself fans out across the weekday list.
    */
   createRecurringEvent: (
     title: string,
@@ -192,16 +196,14 @@ export const eventGenerationUtils = {
     type: CalendarEvent['type'] = 'primary',
     description?: string
   ): CalendarEvent[] => {
-    return daysOfWeek.map((day, index) => 
-      eventGenerationUtils.createEvent(
-        title,
-        day,
-        hour,
-        minute,
-        duration,
-        type,
-        description
-      )
+    return eventGenerationUtils.createEvent(
+      title,
+      daysOfWeek,
+      hour,
+      minute,
+      duration,
+      type,
+      description
     )
   }
 }

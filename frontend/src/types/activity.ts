@@ -1,14 +1,15 @@
 /**
- * `dayOfWeek` follows the US/JS convention: `0=Sun, 1=Mon, … 6=Sat`.
- * Persisted as an integer; display order is controlled separately via
- * `WEEK_DISPLAY_ORDER` so we can render Mon-first without touching storage.
+ * `daysOfWeek` follows the US/JS convention: `0=Sun, 1=Mon, … 6=Sat`.
+ * Persisted as a non-empty array of integers; display order is controlled
+ * separately via `WEEK_DISPLAY_ORDER` so we can render Mon-first without
+ * touching storage.
  */
 export interface RecurringActivity {
   id: string
   userId: string
   periodId: string
   title: string
-  dayOfWeek: number
+  daysOfWeek: number[]
   /** 24h `HH:mm`, zero-padded. */
   startTime: string
   /** 24h `HH:mm`, zero-padded. Server enforces `endTime > startTime`. */
@@ -19,7 +20,7 @@ export interface RecurringActivity {
 
 export interface CreateActivityInput {
   title: string
-  dayOfWeek: number
+  daysOfWeek: number[]
   startTime: string
   endTime: string
 }
@@ -29,7 +30,7 @@ export interface CreateActivityInput {
 export type UpdateActivityInput = CreateActivityInput
 
 /**
- * Index 0..6 → short labels, indexed by the persisted `dayOfWeek` integer.
+ * Index 0..6 → short labels, indexed by the persisted day-of-week integer.
  * Order matches the JS/US convention (0=Sun..6=Sat) so `DAYS_OF_WEEK[dow]`
  * always works directly with the stored value.
  */
@@ -56,6 +57,6 @@ export const DAYS_OF_WEEK_LONG: readonly string[] = [
 /**
  * Display order: Monday → Sunday. European/work-focused UX.
  * Use this to iterate groups in render order; the values are the persisted
- * `dayOfWeek` ints so callers can key activity buckets directly.
+ * day-of-week ints so callers can key activity buckets directly.
  */
 export const WEEK_DISPLAY_ORDER: readonly number[] = [1, 2, 3, 4, 5, 6, 0] as const
