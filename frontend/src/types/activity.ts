@@ -1,28 +1,32 @@
 /**
- * `daysOfWeek` follows the US/JS convention: `0=Sun, 1=Mon, … 6=Sat`.
- * Persisted as a non-empty array of integers; display order is controlled
- * separately via `WEEK_DISPLAY_ORDER` so we can render Mon-first without
- * touching storage.
+ * A single per-weekday time window for a recurring activity. `dayOfWeek`
+ * follows the US/JS convention: `0=Sun, 1=Mon, … 6=Sat`. Times are 24h
+ * zero-padded `HH:mm`. Server enforces `endTime > startTime` per entry.
+ */
+export interface ScheduleEntry {
+  dayOfWeek: number
+  startTime: string
+  endTime: string
+}
+
+/**
+ * `schedule` is a non-empty array; each entry pins a weekday to its own
+ * start/end window. Display order is controlled separately via
+ * `WEEK_DISPLAY_ORDER` so we can render Mon-first without touching storage.
  */
 export interface RecurringActivity {
   id: string
   userId: string
   periodId: string
   title: string
-  daysOfWeek: number[]
-  /** 24h `HH:mm`, zero-padded. */
-  startTime: string
-  /** 24h `HH:mm`, zero-padded. Server enforces `endTime > startTime`. */
-  endTime: string
+  schedule: ScheduleEntry[]
   createdAt: string
   updatedAt: string
 }
 
 export interface CreateActivityInput {
   title: string
-  daysOfWeek: number[]
-  startTime: string
-  endTime: string
+  schedule: ScheduleEntry[]
 }
 
 // The form always submits the full record on edit, so update accepts the same

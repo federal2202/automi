@@ -39,7 +39,7 @@ export function toastActivityCreate(sync: CreateSyncResult): void {
 
 /**
  * Surface the result of a Google Calendar fan-out triggered by activity
- * edit. The backend may delete+recreate when daysOfWeek changes, so we
+ * edit. The backend may delete+recreate when the schedule changes, so we
  * collapse `updated + created + deleted` into a single "synced" count for
  * a tidy single-sentence toast.
  */

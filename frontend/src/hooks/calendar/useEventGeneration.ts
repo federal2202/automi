@@ -153,25 +153,46 @@ export const generateEventsForRange = (startDate: Date, endDate: Date): Calendar
 /**
  * Event generation utilities
  */
+/**
+ * Per-day schedule entry shape used by `eventGenerationUtils`. Mirrors the
+ * persisted `RecurringActivity.schedule` shape so callers can hand the same
+ * array straight through.
+ */
+interface ScheduleEntryInput {
+  dayOfWeek: number
+  startTime: string
+  endTime: string
+}
+
+function parseHHMM(value: string): { hour: number; minute: number } {
+  const [h, m] = value.split(':')
+  return { hour: Number(h) || 0, minute: Number(m) || 0 }
+}
+
 export const eventGenerationUtils = {
   /**
-   * Generate one event per day in the provided weekday list. Mirrors the
-   * persisted `daysOfWeek: number[]` shape so callers don't have to fan out
-   * a single-day helper themselves.
+   * Generate one event per schedule entry. Each entry carries its own
+   * `dayOfWeek` plus `HH:mm` start/end, mirroring the persisted
+   * `RecurringActivity.schedule` shape so callers don't have to fan out.
    */
   createEvent: (
     title: string,
-    daysOfWeek: number[],
-    hour: number,
-    minute: number,
-    duration: number,
+    schedule: ScheduleEntryInput[],
     type: CalendarEvent['type'] = 'primary',
     description?: string
   ): CalendarEvent[] => {
     const currentWeekStart = moment().startOf('week')
-    return daysOfWeek.map((day, index) => {
-      const startTime = moment(currentWeekStart).day(day).hour(hour).minute(minute)
-      const endTime = startTime.clone().add(duration, 'hours')
+    return schedule.map((entry, index) => {
+      const start = parseHHMM(entry.startTime)
+      const end = parseHHMM(entry.endTime)
+      const startTime = moment(currentWeekStart)
+        .day(entry.dayOfWeek)
+        .hour(start.hour)
+        .minute(start.minute)
+      const endTime = moment(currentWeekStart)
+        .day(entry.dayOfWeek)
+        .hour(end.hour)
+        .minute(end.minute)
       return {
         id: `${Date.now()}-${index}-${Math.random()}`,
         title,
@@ -184,26 +205,15 @@ export const eventGenerationUtils = {
   },
 
   /**
-   * Generate recurring events across multiple weekdays. Delegates to
-   * `createEvent`, which now itself fans out across the weekday list.
+   * Generate recurring events across multiple per-day schedule entries.
+   * Delegates to `createEvent`.
    */
   createRecurringEvent: (
     title: string,
-    hour: number,
-    minute: number,
-    duration: number,
-    daysOfWeek: number[],
+    schedule: ScheduleEntryInput[],
     type: CalendarEvent['type'] = 'primary',
     description?: string
   ): CalendarEvent[] => {
-    return eventGenerationUtils.createEvent(
-      title,
-      daysOfWeek,
-      hour,
-      minute,
-      duration,
-      type,
-      description
-    )
+    return eventGenerationUtils.createEvent(title, schedule, type, description)
   }
 }

@@ -1,5 +1,20 @@
 # NotebookLM Project State Documentation
 
+**Fix — RecurringActivityCard shows only the bucket's day time (2026-05-14)** — Cards rendered inside a day bucket now display only that day's start/end time instead of the full multi-day schedule.
+- Files changed:
+  - `src/components/activities/RecurringActivityCard.tsx` (added optional `dayContext?: number` prop; when defined, renders a single line with just that weekday's start/end time)
+  - `src/app/(dashboard)/dashboard/periods/[id]/page.tsx` (passes `dayContext={dow}` to each `<RecurringActivityCard>` inside the day bucket)
+
+**Per-day schedule (per-weekday start/end times in activity form) (2026-05-14)** — RecurringActivityFormDialog now supports independent start/end times per selected weekday with a "same time for all" convenience toggle.
+- Files changed:
+  - `src/types/activity.ts` (new `ScheduleEntry` interface; `RecurringActivity` and `CreateActivityInput` replace `daysOfWeek + startTime + endTime` with `schedule: ScheduleEntry[]`)
+  - `src/components/activities/RecurringActivityFormDialog.tsx` (rewrote state around `schedule: ScheduleEntry[]` + `sameTimeForAll` toggle; day chips add/remove schedule entries; when toggle is OFF, renders per-day `<input type="time">` rows in Mon→Sun order; validation now per-entry)
+  - `src/components/activities/RecurringActivityCard.tsx` (renders single line "Mon, Wed, Fri · 06:00–08:00" when all entries share times, otherwise one line per weekday with its own window)
+  - `src/app/(dashboard)/dashboard/periods/[id]/page.tsx` (bucketing iterates `schedule`; per-bucket sort uses each entry's own `startTime` matched to the bucket's weekday)
+  - `src/hooks/calendar/useEventGeneration.ts` (`eventGenerationUtils.createEvent`/`createRecurringEvent` now take `schedule: ScheduleEntryInput[]` and parse `HH:mm` per entry for both start and end)
+  - `src/utils/activity-sync-toast.ts` (comment updated: `daysOfWeek` → `schedule`)
+- `pnpm tsc --noEmit` clean.
+
 **RecurringActivity multi-day support (daysOfWeek array) (2026-05-14)** — Activity form now uses a 7-chip multi-select; types, list, and calendar transforms updated to handle `daysOfWeek` as an int array.
 - Files changed:
   - `src/types/activity.ts` (`dayOfWeek: number` → `daysOfWeek: number[]` on `RecurringActivity` and `CreateActivityInput`; doc comments updated)

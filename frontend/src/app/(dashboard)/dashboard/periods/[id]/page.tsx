@@ -172,10 +172,10 @@ export default function PeriodDetailPage() {
   }, [pendingDelete, deleteMutation])
 
   /**
-   * Bucket activities by each entry in `daysOfWeek` (0..6) and sort each bucket
-   * by start time. An activity that recurs on multiple days appears in each of
-   * its day buckets. Times are zero-padded `HH:mm`, so lexicographic compare
-   * matches chronological.
+   * Bucket activities by each entry in `schedule` (0..6) and sort each bucket
+   * by that day's start time. An activity with multiple schedule entries
+   * appears in each of its day buckets. Times are zero-padded `HH:mm`, so
+   * lexicographic compare matches chronological.
    */
   const grouped = useMemo(() => {
     const buckets: Record<number, RecurringActivity[]> = {
@@ -189,14 +189,19 @@ export default function PeriodDetailPage() {
     }
     if (!activities) return buckets
     for (const a of activities) {
-      a.daysOfWeek.forEach((dow) => {
-        if (dow >= 0 && dow <= 6) {
-          buckets[dow].push(a)
+      a.schedule.forEach((entry) => {
+        if (entry.dayOfWeek >= 0 && entry.dayOfWeek <= 6) {
+          buckets[entry.dayOfWeek].push(a)
         }
       })
     }
-    for (const dow of Object.keys(buckets)) {
-      buckets[Number(dow)].sort((x, y) => x.startTime.localeCompare(y.startTime))
+    for (const dowKey of Object.keys(buckets)) {
+      const dow = Number(dowKey)
+      buckets[dow].sort((x, y) => {
+        const sx = x.schedule.find((e) => e.dayOfWeek === dow)?.startTime ?? ''
+        const sy = y.schedule.find((e) => e.dayOfWeek === dow)?.startTime ?? ''
+        return sx.localeCompare(sy)
+      })
     }
     return buckets
   }, [activities])
@@ -342,6 +347,7 @@ export default function PeriodDetailPage() {
                         onEdit={openEdit}
                         onDelete={requestDelete}
                         disabled={deletingId === activity.id}
+                        dayContext={dow}
                       />
                     ))}
                   </div>

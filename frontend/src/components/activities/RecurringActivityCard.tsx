@@ -14,6 +14,12 @@ interface RecurringActivityCardProps {
   onEdit: (activity: RecurringActivity) => void
   onDelete: (activity: RecurringActivity) => void
   disabled?: boolean
+  /**
+   * When set (0-6), the card is being rendered inside a specific weekday
+   * bucket. In that case the schedule line shows only that day's start/end
+   * time instead of the full multi-day schedule.
+   */
+  dayContext?: number
 }
 
 function RecurringActivityCardImpl({
@@ -21,6 +27,7 @@ function RecurringActivityCardImpl({
   onEdit,
   onDelete,
   disabled,
+  dayContext,
 }: RecurringActivityCardProps) {
   const handleEdit = useCallback(() => onEdit(activity), [onEdit, activity])
   const handleDelete = useCallback(
@@ -28,14 +35,29 @@ function RecurringActivityCardImpl({
     [onDelete, activity]
   )
 
-  // Render recurring days in Mon→Sun display order (e.g. "Mon, Wed, Fri").
-  // Only meaningful when the activity recurs on more than one day; for a
-  // single-day rule the surrounding section header already shows the day.
-  const dayLabels = WEEK_DISPLAY_ORDER.filter((dow) =>
-    activity.daysOfWeek.includes(dow)
+  // Sort schedule entries in Mon→Sun display order so rendered lines are
+  // ordered consistently with the surrounding day-bucket sections.
+  const sortedEntries = WEEK_DISPLAY_ORDER.flatMap((dow) =>
+    activity.schedule.filter((e) => e.dayOfWeek === dow)
   )
-    .map((dow) => DAYS_OF_WEEK[dow])
-    .join(', ')
+
+  // When rendered inside a specific weekday bucket, show only that day's
+  // time slot. Falls back to the multi-day display if no matching entry is
+  // found (defensive — bucketing on the parent should guarantee a match).
+  const contextEntry =
+    typeof dayContext === 'number'
+      ? activity.schedule.find((e) => e.dayOfWeek === dayContext)
+      : undefined
+
+  // Collapse to a single line when every entry shares identical times; this
+  // is the common case (e.g. "Mon, Wed, Fri · 06:00–08:00").
+  const allSameTimes =
+    sortedEntries.length > 0 &&
+    sortedEntries.every(
+      (e) =>
+        e.startTime === sortedEntries[0].startTime &&
+        e.endTime === sortedEntries[0].endTime
+    )
 
   return (
     <div
@@ -48,12 +70,33 @@ function RecurringActivityCardImpl({
         <h4 className="font-space-grotesk text-base font-semibold leading-tight text-text-primary line-clamp-2">
           {activity.title}
         </h4>
-        <p className="font-jakarta text-xs tracking-[0.5px] text-text-muted">
-          {activity.startTime} – {activity.endTime}
-          {activity.daysOfWeek.length > 1 && (
-            <span className="ml-2 text-white/40">// {dayLabels}</span>
-          )}
-        </p>
+        {contextEntry ? (
+          <p className="font-jakarta text-xs tracking-[0.5px] text-text-muted">
+            <span className="text-white/80">
+              {DAYS_OF_WEEK[contextEntry.dayOfWeek]}
+            </span>
+            <span className="mx-1 text-white/40">·</span>
+            {contextEntry.startTime} – {contextEntry.endTime}
+          </p>
+        ) : allSameTimes ? (
+          <p className="font-jakarta text-xs tracking-[0.5px] text-text-muted">
+            {sortedEntries.map((e) => DAYS_OF_WEEK[e.dayOfWeek]).join(', ')}
+            <span className="mx-1 text-white/40">·</span>
+            {sortedEntries[0].startTime} – {sortedEntries[0].endTime}
+          </p>
+        ) : (
+          <div className="flex flex-col gap-0.5">
+            {sortedEntries.map((e) => (
+              <p
+                key={e.dayOfWeek}
+                className="font-jakarta text-xs tracking-[0.5px] text-text-muted"
+              >
+                <span className="text-white/80">{DAYS_OF_WEEK[e.dayOfWeek]}</span>{' '}
+                {e.startTime} – {e.endTime}
+              </p>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="flex justify-end gap-2 shrink-0">

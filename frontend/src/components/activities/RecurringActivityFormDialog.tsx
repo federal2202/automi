@@ -1,6 +1,6 @@
 "use client"
 
-import { useId, useState } from 'react'
+import { useId, useMemo, useState } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -15,7 +15,9 @@ import { cn } from '@/utils/cn'
 import {
   CreateActivityInput,
   DAYS_OF_WEEK,
+  DAYS_OF_WEEK_LONG,
   RecurringActivity,
+  ScheduleEntry,
   WEEK_DISPLAY_ORDER,
 } from '@/types/activity'
 
@@ -62,6 +64,17 @@ interface RecurringActivityFormBodyProps {
   errorMessage: string | null
 }
 
+const DEFAULT_START = '09:00'
+const DEFAULT_END = '10:00'
+
+function allEntriesShareTimes(entries: ScheduleEntry[]): boolean {
+  if (entries.length === 0) return true
+  const first = entries[0]
+  return entries.every(
+    (e) => e.startTime === first.startTime && e.endTime === first.endTime
+  )
+}
+
 function RecurringActivityFormBody({
   initialActivity,
   onCancel,
@@ -73,25 +86,87 @@ function RecurringActivityFormBody({
   const errorRegionId = useId()
 
   const [title, setTitle] = useState(() => initialActivity?.title ?? '')
-  // Default to Monday (1) for new activities — matches the Mon-first display
-  // order used on the detail page. On edit, pre-select the activity's existing
-  // days.
-  const [daysOfWeek, setDaysOfWeek] = useState<number[]>(
-    () => initialActivity?.daysOfWeek ?? [1]
-  )
+
+  // Initialize schedule: create defaults to Monday 09:00–10:00; edit reuses
+  // the existing per-day entries verbatim.
+  const [schedule, setSchedule] = useState<ScheduleEntry[]>(() => {
+    if (initialActivity?.schedule && initialActivity.schedule.length > 0) {
+      return initialActivity.schedule.map((e) => ({ ...e }))
+    }
+    return [{ dayOfWeek: 1, startTime: DEFAULT_START, endTime: DEFAULT_END }]
+  })
+
+  // "Same time for all" defaults to true for create. On edit it auto-detects:
+  // only true when every existing entry shares identical start+end.
+  const [sameTimeForAll, setSameTimeForAll] = useState<boolean>(() => {
+    if (!initialActivity || initialActivity.schedule.length === 0) return true
+    return allEntriesShareTimes(initialActivity.schedule)
+  })
+
+  const [validationError, setValidationError] = useState<string | null>(null)
+
+  // Sorted entries for rendering per-day rows (Mon → Sun). Kept memoized so
+  // identity is stable per schedule reference.
+  const sortedEntries = useMemo(() => {
+    const orderIndex = new Map<number, number>()
+    WEEK_DISPLAY_ORDER.forEach((dow, idx) => orderIndex.set(dow, idx))
+    return [...schedule].sort(
+      (a, b) =>
+        (orderIndex.get(a.dayOfWeek) ?? 0) - (orderIndex.get(b.dayOfWeek) ?? 0)
+    )
+  }, [schedule])
+
+  const sharedStart = schedule[0]?.startTime ?? DEFAULT_START
+  const sharedEnd = schedule[0]?.endTime ?? DEFAULT_END
 
   const toggleDay = (dow: number) => {
-    setDaysOfWeek((prev) =>
-      prev.includes(dow) ? prev.filter((d) => d !== dow) : [...prev, dow]
+    setSchedule((prev) => {
+      const exists = prev.some((e) => e.dayOfWeek === dow)
+      if (exists) {
+        return prev.filter((e) => e.dayOfWeek !== dow)
+      }
+      // Adding a new day: copy shared times when "same time for all" is on,
+      // otherwise fall back to the first entry's times (or defaults).
+      const start = sameTimeForAll
+        ? prev[0]?.startTime ?? DEFAULT_START
+        : prev[0]?.startTime ?? DEFAULT_START
+      const end = sameTimeForAll
+        ? prev[0]?.endTime ?? DEFAULT_END
+        : prev[0]?.endTime ?? DEFAULT_END
+      return [...prev, { dayOfWeek: dow, startTime: start, endTime: end }]
+    })
+  }
+
+  const updateSharedStart = (value: string) => {
+    setSchedule((prev) => prev.map((e) => ({ ...e, startTime: value })))
+  }
+  const updateSharedEnd = (value: string) => {
+    setSchedule((prev) => prev.map((e) => ({ ...e, endTime: value })))
+  }
+  const updateEntryStart = (dow: number, value: string) => {
+    setSchedule((prev) =>
+      prev.map((e) => (e.dayOfWeek === dow ? { ...e, startTime: value } : e))
     )
   }
-  const [startTime, setStartTime] = useState(
-    () => initialActivity?.startTime ?? '09:00'
-  )
-  const [endTime, setEndTime] = useState(
-    () => initialActivity?.endTime ?? '10:00'
-  )
-  const [validationError, setValidationError] = useState<string | null>(null)
+  const updateEntryEnd = (dow: number, value: string) => {
+    setSchedule((prev) =>
+      prev.map((e) => (e.dayOfWeek === dow ? { ...e, endTime: value } : e))
+    )
+  }
+
+  const handleSameTimeToggle = (next: boolean) => {
+    if (next && !sameTimeForAll) {
+      // Going ON: collapse to the first entry's times.
+      setSchedule((prev) => {
+        if (prev.length === 0) return prev
+        const s = prev[0].startTime
+        const e = prev[0].endTime
+        return prev.map((entry) => ({ ...entry, startTime: s, endTime: e }))
+      })
+    }
+    // Going OFF: keep current times as-is (they're all equal at this point).
+    setSameTimeForAll(next)
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -102,25 +177,27 @@ function RecurringActivityFormBody({
       setValidationError('Title is required.')
       return
     }
-    if (!startTime || !endTime) {
-      setValidationError('Both start and end times are required.')
-      return
-    }
-    // Both values are `HH:mm` so lexicographic compare matches chronological.
-    if (endTime <= startTime) {
-      setValidationError('End time must be after start time.')
-      return
-    }
-    if (daysOfWeek.length === 0) {
+    if (schedule.length === 0) {
       setValidationError('Select at least one day.')
       return
+    }
+    for (const entry of schedule) {
+      if (!entry.startTime || !entry.endTime) {
+        setValidationError('Both start and end times are required.')
+        return
+      }
+      // Both values are `HH:mm` so lexicographic compare matches chronological.
+      if (entry.endTime <= entry.startTime) {
+        setValidationError(
+          `End time must be after start time on ${DAYS_OF_WEEK_LONG[entry.dayOfWeek]}.`
+        )
+        return
+      }
     }
 
     await onSubmit({
       title: trimmed,
-      daysOfWeek,
-      startTime,
-      endTime,
+      schedule,
     })
   }
 
@@ -173,7 +250,7 @@ function RecurringActivityFormBody({
             className="flex flex-wrap gap-2"
           >
             {WEEK_DISPLAY_ORDER.map((dow) => {
-              const isActive = daysOfWeek.includes(dow)
+              const isActive = schedule.some((e) => e.dayOfWeek === dow)
               return (
                 <button
                   key={dow}
@@ -198,45 +275,126 @@ function RecurringActivityFormBody({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="flex flex-col gap-2">
-            <Label
-              htmlFor="activity-start"
-              className="text-[11px] uppercase tracking-[1.1px] text-white/70 font-jakarta"
-            >
-              Start Time
-            </Label>
-            <Input
-              id="activity-start"
-              type="time"
-              value={startTime}
-              max={endTime || undefined}
-              onChange={(e) => setStartTime(e.target.value)}
+        <div className="flex flex-col gap-3">
+          <label
+            className={cn(
+              'flex items-center gap-2 text-[11px] uppercase tracking-[1.1px] text-white/70 font-jakarta select-none',
+              isSubmitting && 'opacity-50 cursor-not-allowed'
+            )}
+          >
+            <input
+              type="checkbox"
+              checked={sameTimeForAll}
+              onChange={(e) => handleSameTimeToggle(e.target.checked)}
               disabled={isSubmitting}
-              aria-invalid={hasError || undefined}
-              aria-describedby={hasError ? errorRegionId : undefined}
-              className="bg-white/5 border-white/10 text-white"
+              className="h-4 w-4 rounded border-white/20 bg-white/5 accent-green-nice"
             />
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label
-              htmlFor="activity-end"
-              className="text-[11px] uppercase tracking-[1.1px] text-white/70 font-jakarta"
-            >
-              End Time
-            </Label>
-            <Input
-              id="activity-end"
-              type="time"
-              value={endTime}
-              min={startTime || undefined}
-              onChange={(e) => setEndTime(e.target.value)}
-              disabled={isSubmitting}
-              aria-invalid={hasError || undefined}
-              aria-describedby={hasError ? errorRegionId : undefined}
-              className="bg-white/5 border-white/10 text-white"
-            />
-          </div>
+            Same time for all selected days
+          </label>
+
+          {sameTimeForAll ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-2">
+                <Label
+                  htmlFor="activity-start"
+                  className="text-[11px] uppercase tracking-[1.1px] text-white/70 font-jakarta"
+                >
+                  Start Time
+                </Label>
+                <Input
+                  id="activity-start"
+                  type="time"
+                  value={sharedStart}
+                  max={sharedEnd || undefined}
+                  onChange={(e) => updateSharedStart(e.target.value)}
+                  disabled={isSubmitting || schedule.length === 0}
+                  aria-invalid={hasError || undefined}
+                  aria-describedby={hasError ? errorRegionId : undefined}
+                  className="bg-white/5 border-white/10 text-white"
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label
+                  htmlFor="activity-end"
+                  className="text-[11px] uppercase tracking-[1.1px] text-white/70 font-jakarta"
+                >
+                  End Time
+                </Label>
+                <Input
+                  id="activity-end"
+                  type="time"
+                  value={sharedEnd}
+                  min={sharedStart || undefined}
+                  onChange={(e) => updateSharedEnd(e.target.value)}
+                  disabled={isSubmitting || schedule.length === 0}
+                  aria-invalid={hasError || undefined}
+                  aria-describedby={hasError ? errorRegionId : undefined}
+                  className="bg-white/5 border-white/10 text-white"
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {sortedEntries.length === 0 && (
+                <p className="text-white/50 text-xs font-jakarta">
+                  Select at least one day above to configure times.
+                </p>
+              )}
+              {sortedEntries.map((entry) => {
+                const startId = `activity-start-${entry.dayOfWeek}`
+                const endId = `activity-end-${entry.dayOfWeek}`
+                return (
+                  <div
+                    key={entry.dayOfWeek}
+                    className="grid grid-cols-[80px_1fr_1fr] items-center gap-3"
+                  >
+                    <span className="text-[11px] uppercase tracking-[1.1px] text-white/70 font-jakarta">
+                      {DAYS_OF_WEEK_LONG[entry.dayOfWeek]}
+                    </span>
+                    <div className="flex flex-col gap-1">
+                      <Label
+                        htmlFor={startId}
+                        className="sr-only"
+                      >
+                        Start time for {DAYS_OF_WEEK_LONG[entry.dayOfWeek]}
+                      </Label>
+                      <Input
+                        id={startId}
+                        type="time"
+                        value={entry.startTime}
+                        max={entry.endTime || undefined}
+                        onChange={(e) =>
+                          updateEntryStart(entry.dayOfWeek, e.target.value)
+                        }
+                        disabled={isSubmitting}
+                        aria-invalid={hasError || undefined}
+                        aria-describedby={hasError ? errorRegionId : undefined}
+                        className="bg-white/5 border-white/10 text-white"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <Label htmlFor={endId} className="sr-only">
+                        End time for {DAYS_OF_WEEK_LONG[entry.dayOfWeek]}
+                      </Label>
+                      <Input
+                        id={endId}
+                        type="time"
+                        value={entry.endTime}
+                        min={entry.startTime || undefined}
+                        onChange={(e) =>
+                          updateEntryEnd(entry.dayOfWeek, e.target.value)
+                        }
+                        disabled={isSubmitting}
+                        aria-invalid={hasError || undefined}
+                        aria-describedby={hasError ? errorRegionId : undefined}
+                        className="bg-white/5 border-white/10 text-white"
+                      />
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
 
         <p

@@ -5,7 +5,7 @@
  * DB writes are the source of truth; Google Calendar is best-effort.
  *
  * Functions:
- *  - generateEventsForActivity  — create events for days in period that match daysOfWeek
+ *  - generateEventsForActivity  — create events for days in period that match schedule
  *  - deleteEventsForActivity    — delete all synced events for one activity
  *  - updateEventsForActivity    — patch or re-generate events when an activity changes
  *  - deleteEventsForPeriod      — fan-out delete to all activities in a period
@@ -21,6 +21,8 @@ import type { RecurringActivity, Period } from "../../generated/prisma/client";
 // -------------------------------------------------------------------
 // Types
 // -------------------------------------------------------------------
+
+export type ScheduleEntry = { dayOfWeek: number; startTime: string; endTime: string };
 
 export interface SyncResult {
   created: number;
@@ -46,6 +48,21 @@ export interface UpdateResult {
 
 const CONCURRENCY = 10;
 const SOURCE_TYPE = "recurring_activity";
+
+/** Cast the opaque Json column to a typed ScheduleEntry array. */
+function getSchedule(activity: RecurringActivity): ScheduleEntry[] {
+  return activity.schedule as unknown as ScheduleEntry[];
+}
+
+/**
+ * Sort a schedule by dayOfWeek then stringify — used for deep equality check
+ * to decide whether a full delete+regenerate is needed.
+ */
+function canonicalSchedule(schedule: ScheduleEntry[]): string {
+  return JSON.stringify(
+    [...schedule].sort((a, b) => a.dayOfWeek - b.dayOfWeek),
+  );
+}
 
 /** Returns the JS day-of-week index (0=Sun…6=Sat) for a Date in a given tz. */
 function localDayOfWeek(utcDate: Date, timezone: string): number {
@@ -74,11 +91,11 @@ function* iterateDays(startUTC: Date, endUTC: Date): Generator<Date> {
 }
 
 /**
- * Given a calendar day represented as a UTC-midnight Date and a "HH:mm" wall-
+ * Given a calendar day represented as a UTC-midnight Date and a "HH:MM" wall-
  * clock time in the user's timezone, returns the equivalent UTC ISO string for
  * use in Google Calendar's start.dateTime / end.dateTime.
  *
- * Strategy: build a local-time string "YYYY-MM-DDTHH:mm:00" using the date
+ * Strategy: build a local-time string "YYYY-MM-DDTHH:MM:00" using the date
  * portion in the user's tz, then use fromZonedTime to convert to UTC.
  */
 function wallClockToUTC(dayUTC: Date, time: string, timezone: string): string {
@@ -141,12 +158,14 @@ export async function generateEventsForActivity(
 
   if (rangeStart > rangeEnd) return result; // period already in the past
 
+  const schedule = getSchedule(activity);
   const limit = pLimit(CONCURRENCY);
   const tasks: Array<Promise<void>> = [];
 
   for (const dayUTC of iterateDays(rangeStart, rangeEnd)) {
     const dow = localDayOfWeek(dayUTC, timezone);
-    if (!activity.daysOfWeek.includes(dow)) continue;
+    const entry = schedule.find((e) => e.dayOfWeek === dow);
+    if (!entry) continue;
 
     const dedupeDate = utcMidnightForLocalDay(dayUTC, timezone);
     const dateLabel = dedupeDate.toISOString().slice(0, 10);
@@ -154,8 +173,8 @@ export async function generateEventsForActivity(
     tasks.push(
       limit(async () => {
         try {
-          const startUTC = wallClockToUTC(dayUTC, activity.startTime, timezone);
-          const endUTC = wallClockToUTC(dayUTC, activity.endTime, timezone);
+          const startUTC = wallClockToUTC(dayUTC, entry.startTime, timezone);
+          const endUTC = wallClockToUTC(dayUTC, entry.endTime, timezone);
 
           const googleEvent = await calEvents.insert({
             calendarId: "primary",
@@ -263,14 +282,11 @@ export async function updateEventsForActivity(
 ): Promise<UpdateResult> {
   const result: UpdateResult = { updated: 0, deleted: 0, created: 0, errors: [] };
 
-  // Two daysOfWeek arrays are equal when they have the same sorted elements.
-  const sortedOld = [...oldActivity.daysOfWeek].sort((a, b) => a - b);
-  const sortedNew = [...newActivity.daysOfWeek].sort((a, b) => a - b);
-  const daysOfWeekChanged =
-    sortedOld.length !== sortedNew.length ||
-    sortedOld.some((v, i) => v !== sortedNew[i]);
+  // Deep-compare schedules: sort both by dayOfWeek then stringify.
+  const scheduleChanged =
+    canonicalSchedule(getSchedule(oldActivity)) !== canonicalSchedule(getSchedule(newActivity));
 
-  if (daysOfWeekChanged) {
+  if (scheduleChanged) {
     // Full regenerate: delete all old events then create new ones.
     const del = await deleteEventsForActivity(userId, oldActivity.id);
     result.deleted += del.deleted;
@@ -280,7 +296,7 @@ export async function updateEventsForActivity(
     result.created += gen.created;
     result.errors.push(...gen.errors);
   } else {
-    // Patch title/startTime/endTime on existing Google events.
+    // Schedules are identical — only title changed. Patch existing Google events.
     const user = await fetchUser(userId);
     if (!user) {
       result.errors.push({ activityId: newActivity.id, date: "N/A", message: "User not found" });
@@ -289,6 +305,7 @@ export async function updateEventsForActivity(
 
     const timezone = user.timezone;
     const calEvents = buildCalendarClient(user);
+    const newSchedule = getSchedule(newActivity);
 
     const syncedRows = await prisma.syncedEvent.findMany({
       where: { userId, sourceType: SOURCE_TYPE, sourceId: oldActivity.id },
@@ -300,8 +317,15 @@ export async function updateEventsForActivity(
       limit(async () => {
         const dateLabel = row.date.toISOString().slice(0, 10);
         try {
-          const startUTC = wallClockToUTC(row.date, newActivity.startTime, timezone);
-          const endUTC = wallClockToUTC(row.date, newActivity.endTime, timezone);
+          // Find the schedule entry for the day this event falls on.
+          const dow = localDayOfWeek(row.date, timezone);
+          const entry = newSchedule.find((e) => e.dayOfWeek === dow);
+
+          // Defensive: if no schedule entry for this day, skip rather than crash.
+          if (!entry) return;
+
+          const startUTC = wallClockToUTC(row.date, entry.startTime, timezone);
+          const endUTC = wallClockToUTC(row.date, entry.endTime, timezone);
 
           await calEvents.patch({
             calendarId: "primary",
@@ -381,6 +405,8 @@ export async function syncPeriodDateRange(
   const limit = pLimit(CONCURRENCY);
 
   for (const activity of activities) {
+    const schedule = getSchedule(activity);
+
     // --- Delete events that fall outside the NEW date range ---
     const orphans = await prisma.syncedEvent.findMany({
       where: {
@@ -439,7 +465,8 @@ export async function syncPeriodDateRange(
 
       for (const dayUTC of iterateDays(rangeStart, range.to)) {
         const dow = localDayOfWeek(dayUTC, timezone);
-        if (!activity.daysOfWeek.includes(dow)) continue;
+        const entry = schedule.find((e) => e.dayOfWeek === dow);
+        if (!entry) continue;
 
         const dedupeDate = utcMidnightForLocalDay(dayUTC, timezone);
         const dateLabel = dedupeDate.toISOString().slice(0, 10);
@@ -447,8 +474,8 @@ export async function syncPeriodDateRange(
         genTasks.push(
           limit(async () => {
             try {
-              const startUTC = wallClockToUTC(dayUTC, activity.startTime, timezone);
-              const endUTC = wallClockToUTC(dayUTC, activity.endTime, timezone);
+              const startUTC = wallClockToUTC(dayUTC, entry.startTime, timezone);
+              const endUTC = wallClockToUTC(dayUTC, entry.endTime, timezone);
 
               const googleEvent = await calEvents.insert({
                 calendarId: "primary",

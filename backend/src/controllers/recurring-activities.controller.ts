@@ -9,79 +9,111 @@ import {
   updateEventsForActivity,
 } from "../services/calendar-sync.service";
 
+// -------------------------------------------------------------------
+// Types
+// -------------------------------------------------------------------
+
+type ScheduleEntry = { dayOfWeek: number; startTime: string; endTime: string };
+
 interface ActivityInput {
   title?: unknown;
-  daysOfWeek?: unknown;
-  startTime?: unknown;
-  endTime?: unknown;
+  schedule?: unknown;
 }
 
 interface ParsedActivity {
   title: string;
-  daysOfWeek: number[];
-  startTime: string;
-  endTime: string;
+  schedule: ScheduleEntry[];
 }
 
-const ALLOWED_KEYS = ["title", "daysOfWeek", "startTime", "endTime"] as const;
+const ALLOWED_KEYS = ["title", "schedule"] as const;
 
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+// -------------------------------------------------------------------
+// Validation helper
+// -------------------------------------------------------------------
 
 const parseAndValidateActivity = (
   body: ActivityInput,
 ): { ok: true; value: ParsedActivity } | { ok: false; error: string } => {
-  const { title, daysOfWeek, startTime, endTime } = body ?? {};
+  const { title, schedule } = body ?? {};
 
   if (typeof title !== "string" || title.trim().length === 0) {
     return { ok: false, error: "title is required and must be a non-empty string" };
   }
 
-  if (
-    !Array.isArray(daysOfWeek) ||
-    daysOfWeek.length === 0 ||
-    !daysOfWeek.every((d) => Number.isInteger(d) && d >= 0 && d <= 6)
-  ) {
+  if (!Array.isArray(schedule) || schedule.length === 0) {
     return {
       ok: false,
-      error: "daysOfWeek must be a non-empty array of integers 0-6 (0 = Sunday, 6 = Saturday)",
+      error: "schedule is required and must be a non-empty array of schedule entries",
     };
   }
 
-  // Reject duplicates.
-  if (new Set(daysOfWeek).size !== daysOfWeek.length) {
-    return {
-      ok: false,
-      error: "daysOfWeek must not contain duplicate values",
-    };
+  // Validate each entry in the schedule array.
+  for (let i = 0; i < schedule.length; i++) {
+    const entry = schedule[i];
+    if (typeof entry !== "object" || entry === null) {
+      return { ok: false, error: `schedule[${i}] must be an object` };
+    }
+
+    const { dayOfWeek, startTime, endTime } = entry as Record<string, unknown>;
+
+    if (!Number.isInteger(dayOfWeek) || (dayOfWeek as number) < 0 || (dayOfWeek as number) > 6) {
+      return {
+        ok: false,
+        error: `schedule[${i}].dayOfWeek must be an integer between 0 (Sunday) and 6 (Saturday)`,
+      };
+    }
+
+    if (typeof startTime !== "string" || !TIME_RE.test(startTime)) {
+      return {
+        ok: false,
+        error: `schedule[${i}].startTime must match "HH:MM" 24h format (e.g. "07:30")`,
+      };
+    }
+
+    if (typeof endTime !== "string" || !TIME_RE.test(endTime)) {
+      return {
+        ok: false,
+        error: `schedule[${i}].endTime must match "HH:MM" 24h format (e.g. "18:00")`,
+      };
+    }
+
+    if (endTime <= startTime) {
+      return {
+        ok: false,
+        error: `schedule[${i}].endTime must be greater than startTime`,
+      };
+    }
   }
 
-  if (typeof startTime !== "string" || !TIME_RE.test(startTime)) {
+  // Reject duplicate dayOfWeek values.
+  const days = (schedule as Array<{ dayOfWeek: number }>).map((e) => e.dayOfWeek);
+  if (new Set(days).size !== days.length) {
     return {
       ok: false,
-      error: 'startTime is required and must match "HH:mm" 24h format (e.g. "07:30")',
+      error: "schedule must not contain duplicate dayOfWeek values",
     };
-  }
-  if (typeof endTime !== "string" || !TIME_RE.test(endTime)) {
-    return {
-      ok: false,
-      error: 'endTime is required and must match "HH:mm" 24h format (e.g. "07:30")',
-    };
-  }
-
-  if (endTime <= startTime) {
-    return { ok: false, error: "endTime must be greater than startTime" };
   }
 
   return {
     ok: true,
     value: {
       title: title.trim(),
-      daysOfWeek: daysOfWeek as number[],
-      startTime,
-      endTime,
+      schedule: (schedule as Array<{ dayOfWeek: unknown; startTime: unknown; endTime: unknown }>).map(
+        (e) => ({
+          dayOfWeek: e.dayOfWeek as number,
+          startTime: e.startTime as string,
+          endTime: e.endTime as string,
+        }),
+      ),
     },
   };
 };
+
+// -------------------------------------------------------------------
+// Shared helpers
+// -------------------------------------------------------------------
 
 const ensurePeriodOwned = async (
   periodId: string,
@@ -90,6 +122,10 @@ const ensurePeriodOwned = async (
   const period = await assertOwnership(prisma.period, periodId, userId);
   return period !== null;
 };
+
+// -------------------------------------------------------------------
+// Handlers
+// -------------------------------------------------------------------
 
 export const getRecurringActivities = async (
   req: AuthRequest,
@@ -107,7 +143,7 @@ export const getRecurringActivities = async (
 
     const activities = await prisma.recurringActivity.findMany({
       where: { userId, periodId },
-      orderBy: [{ startTime: "asc" }],
+      orderBy: [{ createdAt: "asc" }],
     });
     res.json(activities);
   } catch (error) {
@@ -181,9 +217,7 @@ export const createRecurringActivity = async (
         userId,
         periodId,
         title: parsed.value.title,
-        daysOfWeek: parsed.value.daysOfWeek,
-        startTime: parsed.value.startTime,
-        endTime: parsed.value.endTime,
+        schedule: parsed.value.schedule,
       },
     });
 
@@ -230,12 +264,10 @@ export const updateRecurringActivity = async (
       return;
     }
 
-    // Build merged candidate for VALIDATION only.
+    // Build merged candidate for VALIDATION only — falls back to existing values.
     const candidate: ActivityInput = {
       title: body.title !== undefined ? body.title : existing.title,
-      daysOfWeek: body.daysOfWeek !== undefined ? body.daysOfWeek : existing.daysOfWeek,
-      startTime: body.startTime !== undefined ? body.startTime : existing.startTime,
-      endTime: body.endTime !== undefined ? body.endTime : existing.endTime,
+      schedule: body.schedule !== undefined ? body.schedule : existing.schedule,
     };
 
     const parsed = parseAndValidateActivity(candidate);
@@ -245,16 +277,9 @@ export const updateRecurringActivity = async (
     }
 
     // WRITE only fields the client actually sent.
-    const data: {
-      title?: string;
-      daysOfWeek?: number[];
-      startTime?: string;
-      endTime?: string;
-    } = {};
+    const data: { title?: string; schedule?: ScheduleEntry[] } = {};
     if (body.title !== undefined) data.title = parsed.value.title;
-    if (body.daysOfWeek !== undefined) data.daysOfWeek = parsed.value.daysOfWeek;
-    if (body.startTime !== undefined) data.startTime = parsed.value.startTime;
-    if (body.endTime !== undefined) data.endTime = parsed.value.endTime;
+    if (body.schedule !== undefined) data.schedule = parsed.value.schedule;
 
     if (Object.keys(data).length === 0) {
       res.json({ ...existing, sync: { updated: 0, deleted: 0, created: 0, errors: [] } });

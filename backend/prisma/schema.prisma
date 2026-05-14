@@ -48,10 +48,7 @@ model RecurringActivity {
   periodId  String
   userId    String
   title     String
-  /// managed manually: GIN(daysOfWeek)
-  daysOfWeek Int[]
-  startTime String
-  endTime   String
+  schedule  Json
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

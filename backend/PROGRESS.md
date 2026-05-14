@@ -1,5 +1,17 @@
 # Backend Development Progress
 
+## Per-day schedule (schedule JSONB replaces daysOfWeek + startTime + endTime) — 2026-05-14
+
+Each RecurringActivity now stores a per-day schedule with independent start/end times per weekday.
+
+### Files changed
+- `prisma/schema.prisma` — removed `daysOfWeek Int[]`, `startTime String`, `endTime String`, and the `/// managed manually: GIN(daysOfWeek)` comment; added `schedule Json`.
+- `prisma/migrations/20260514210000_per_day_schedule/migration.sql` — hand-written transactional migration: ADD COLUMN `schedule jsonb DEFAULT '[]'`, UPDATE to migrate existing rows via `jsonb_agg(jsonb_build_object('dayOfWeek', d, 'startTime', ...))` from `unnest(daysOfWeek)`, DROP GIN index, DROP `daysOfWeek` / `startTime` / `endTime` columns.
+- `src/controllers/recurring-activities.controller.ts` — replaced `ActivityInput`/`ParsedActivity` with `schedule`-based types; `ScheduleEntry` type added; `parseAndValidateActivity` validates array length, each entry's `dayOfWeek` (0-6 integer), `startTime`/`endTime` (HH:MM regex), endTime > startTime, and no duplicate `dayOfWeek` values; `createRecurringActivity` passes `schedule` to prisma; `updateRecurringActivity` merges candidate from `schedule` only; `getRecurringActivities` orderBy changed to `createdAt asc`.
+- `src/services/calendar-sync.service.ts` — added `ScheduleEntry` type and `getSchedule(activity)` cast helper; `generateEventsForActivity`: per-day `entry = schedule.find(e => e.dayOfWeek === dow)` lookup replaces `includes(dow)`, uses `entry.startTime`/`entry.endTime`; `syncPeriodDateRange`: same substitution in new-range generation loop; `updateEventsForActivity`: `daysOfWeekChanged` replaced with `canonicalSchedule` deep-compare (sort by dayOfWeek + JSON.stringify); title-only patch path computes `localDayOfWeek(row.date, timezone)` to look up the matching entry per synced event, skips defensively if no entry found.
+
+---
+
 ## RecurringActivity dayOfWeek → daysOfWeek Int[] (multi-day support) — 2026-05-14
 
 Activities can now span multiple weekdays in a single record; sync fans out across all selected days.
