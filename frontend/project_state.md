@@ -1,5 +1,20 @@
 # NotebookLM Project State Documentation
 
+**3-step onboarding wizard (2026-05-15)** — New onboarding flow at `/onboarding` for first-time users. No backend changes; "onboarded" is derived purely from `GET /periods` (≥1 period). Every step has a "Skip for now" link that exits to `/dashboard/calendar`.
+- Steps live in a single route with local `useState` step index (no URL change between steps):
+  1. `WelcomeStep` — short explainer for Periods + Activities concepts with examples.
+  2. `PeriodStep` — title + start/end date form, reuses the timezone-safe ISO round-trip helpers from `PeriodFormDialog`. On submit POSTs via `createPeriod` and stashes the returned `Period` in wizard state.
+  3. `ActivityStep` — title + weekday chips + per-day or shared start/end times (mirrors `RecurringActivityFormDialog`). POSTs via `createActivity` scoped to the period from step 2, then routes to `/dashboard/calendar`.
+- Wizard uses React Query mutations and invalidates the same keys as the dashboard pages: `['periods']` and `googleCalendarQueryKeys.events()` on period create; `['period', periodId, 'activities']` and `googleCalendarQueryKeys.events()` on activity create. Surfaces `toastActivityCreate(sync)` so the Google Calendar sync result is visible.
+- Submit buttons show spinner + "Syncing to Google Calendar..." copy while pending (matches existing dashboard pattern).
+- Glassmorphism card wrapper (`bg-[#ffffff]/2 backdrop-blur-sm`) centered in the viewport; 3-pill step indicator at top of the card.
+- Redirect wiring:
+  - `src/app/auth/callback/page.tsx` — after `setUser`, awaits `getPeriods()`. Empty list → `router.replace('/onboarding')`; otherwise → `/dashboard/calendar`. Failure is logged + falls through to the dashboard (the dashboard guard retries).
+  - `src/components/onboarding/OnboardingGuard.tsx` (new) — mounted in the dashboard layout. Once `isInitialized && user` is truthy, calls `getPeriods()` exactly once (gated by `useRef`); if empty AND we're not already on `/onboarding`, `router.replace('/onboarding')`. Failure is swallowed with `console.warn` so a transient API blip never strands a real user.
+- New files: `src/app/onboarding/layout.tsx` (minimal dark layout + its own sonner Toaster — the dashboard one isn't in scope here), `src/app/onboarding/page.tsx`, `src/components/onboarding/OnboardingWizard.tsx`, `src/components/onboarding/OnboardingGuard.tsx`, `src/components/onboarding/steps/WelcomeStep.tsx`, `src/components/onboarding/steps/PeriodStep.tsx`, `src/components/onboarding/steps/ActivityStep.tsx`.
+- Modified files: `src/app/auth/callback/page.tsx`, `src/app/(dashboard)/dashboard/layout.tsx`.
+- `pnpm tsc --noEmit` clean. `pnpm lint` clean for every changed file (pre-existing warnings in `landing/`, `ui/`, calendar hooks, etc. unchanged).
+
 **Fix — RecurringActivityCard shows only the bucket's day time (2026-05-14)** — Cards rendered inside a day bucket now display only that day's start/end time instead of the full multi-day schedule.
 - Files changed:
   - `src/components/activities/RecurringActivityCard.tsx` (added optional `dayContext?: number` prop; when defined, renders a single line with just that weekday's start/end time)
