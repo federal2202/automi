@@ -1,6 +1,6 @@
 'use client'
 
-import { memo, useEffect } from 'react'
+import { memo, useEffect, useMemo, useState } from 'react'
 import { Views } from 'react-big-calendar'
 import { cn } from '@/utils/cn'
 import { CalendarProps, CalendarView } from '@/types/calendar/calendar.types'
@@ -55,6 +55,35 @@ export const Calendar = memo(({
   
   // Use prop events if provided, otherwise use calendar events (Google or sample)
   const events = propEvents || calendarEvents
+
+  // One-shot "just finished onboarding" stagger animation. We read & clear
+  // the flag synchronously on first mount so a page refresh doesn't replay
+  // the celebration, and Strict Mode's double-invoke naturally results in
+  // a single playthrough (second mount sees no flag).
+  const [justOnboarded, setJustOnboarded] = useState(false)
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem('justOnboarded') === '1') {
+        sessionStorage.removeItem('justOnboarded')
+        setJustOnboarded(true)
+      }
+    } catch {
+      // sessionStorage can throw in private modes — silently skip the anim.
+    }
+  }, [])
+
+  // Build a stable eventId -> stagger-index map, sorted by start time
+  // ascending so events visually settle from earliest to latest. The cap
+  // at 12 keeps a packed week from taking >1.1s to finish settling.
+  const staggerMap = useMemo(() => {
+    if (!justOnboarded) return null
+    const map = new Map<string, number>()
+    const sorted = [...events].sort(
+      (a, b) => a.start.getTime() - b.start.getTime()
+    )
+    sorted.forEach((e, i) => map.set(e.id, Math.min(i, 12)))
+    return map
+  }, [justOnboarded, events])
 
   // Navigation handlers using store actions
   const handleNavigate = (direction: 'prev' | 'next') => {
@@ -147,6 +176,7 @@ export const Calendar = memo(({
         events={events}
         onViewChange={handleViewChange}
         onDateChange={handleDateChange}
+        staggerMap={staggerMap}
       />
       
       {/* Floating Chat Button */}

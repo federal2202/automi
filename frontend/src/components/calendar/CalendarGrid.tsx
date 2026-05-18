@@ -1,6 +1,6 @@
 'use client'
 
-import { memo, useCallback } from 'react'
+import { memo, useCallback, useMemo } from 'react'
 import { Calendar as BigCalendar, momentLocalizer, SlotInfo } from 'react-big-calendar'
 import withDragAndDrop, { EventInteractionArgs } from 'react-big-calendar/lib/addons/dragAndDrop'
 import moment from 'moment'
@@ -23,6 +23,13 @@ interface CalendarGridProps {
   onViewChange: (view: CalendarView) => void
   onDateChange: (date: Date) => void
   className?: string
+  /**
+   * Optional one-shot entry-animation map: eventId -> stagger index.
+   * When present, each rendered event is wrapped in a div that runs the
+   * `event-enter` keyframe with `animation-delay: index * 60ms`. When
+   * null, events render exactly as before (zero overhead).
+   */
+  staggerMap?: Map<string, number> | null
 }
 
 /**
@@ -33,9 +40,10 @@ export const CalendarGrid = memo(({
   currentDate, 
   view, 
   events, 
-  onViewChange, 
-  onDateChange, 
-  className 
+  onViewChange,
+  onDateChange,
+  className,
+  staggerMap
 }: CalendarGridProps) => {
   const { openCreateModal, openEditModal, moveEvent, selectEvent } = useEventManagement()
   
@@ -124,6 +132,39 @@ export const CalendarGrid = memo(({
     </span>
   )
 
+  // When the "just finished onboarding" stagger map is present, wrap the
+  // existing event renderers in a div that runs the `event-enter` keyframe
+  // with a per-event delay. We memoize the component identities so
+  // react-big-calendar doesn't tear them down on every parent render. When
+  // there's no staggerMap we hand back the original renderers untouched —
+  // zero overhead on the steady-state render path.
+  const eventComponents = useMemo(() => {
+    if (!staggerMap) {
+      return { event: CalendarEventComponent, monthEvent: MonthEvent }
+    }
+    const delayFor = (id: string) => {
+      const idx = staggerMap.get(id) ?? 0
+      return `${idx * 60}ms`
+    }
+    const StaggeredEvent = ({ event }: { event: CalendarEvent }) => (
+      <div
+        className="event-enter w-full h-full"
+        style={{ animationDelay: delayFor(event.id) }}
+      >
+        <CalendarEventComponent event={event} />
+      </div>
+    )
+    const StaggeredMonthEvent = ({ event }: { event: CalendarEvent }) => (
+      <span
+        className="event-enter block truncate text-[11px] font-medium leading-tight"
+        style={{ animationDelay: delayFor(event.id) }}
+      >
+        {event.title}
+      </span>
+    )
+    return { event: StaggeredEvent, monthEvent: StaggeredMonthEvent }
+  }, [staggerMap])
+
   return (
     <div className="w-full flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
       <DragAndDropCalendar
@@ -151,7 +192,7 @@ export const CalendarGrid = memo(({
         resizable={true}
         
         components={{
-          event: CalendarEventComponent,
+          event: eventComponents.event,
           toolbar: () => null, // We use custom toolbar
           week: {
             header: CalendarDayHeader
@@ -161,7 +202,7 @@ export const CalendarGrid = memo(({
           },
           month: {
             dateHeader: MonthDateHeader,
-            event: MonthEvent
+            event: eventComponents.monthEvent
           },
           day: {
             header: CalendarDayHeader

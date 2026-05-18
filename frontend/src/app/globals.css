@@ -183,6 +183,26 @@ body {
   animation: fade-in-down 0.8s ease-out both;
 }
 
+/* One-shot stagger entry for calendar events after the user finishes
+   onboarding. `both` fill-mode is critical — it keeps the event at the
+   0% frame (opacity: 0) during the per-event animation-delay window so
+   nothing flashes before its turn. The transform is intentionally small
+   so react-big-calendar's hit testing stays accurate during the run. */
+@keyframes event-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.event-enter {
+  animation: event-enter 400ms ease-out both;
+}
+
 /* Explicit sidebar border overrides */
 [data-sidebar="separator"] {
   background-color: #262626 !important;

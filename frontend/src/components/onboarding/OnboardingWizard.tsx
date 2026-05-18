@@ -44,8 +44,12 @@ export function OnboardingWizard() {
    * local auth store so the dashboard guard doesn't bounce the user
    * back here mid-navigation, then route to the calendar. Failure is
    * surfaced via toast but never traps the user.
+   *
+   * `celebrate` controls whether the calendar plays its first-arrival
+   * stagger animation: true only for a real Finish (user completed an
+   * activity), false for Skip (no payoff to celebrate).
    */
-  const finishAndExit = async () => {
+  const exitToDashboard = async (celebrate: boolean) => {
     if (isCompleting) return
     setIsCompleting(true)
     // Optimistic flip — the guard re-evaluates synchronously off this.
@@ -58,16 +62,25 @@ export function OnboardingWizard() {
     }
     try {
       const updated = await completeOnboarding()
-      // Merge the server-truthful response so any other server-derived
-      // fields stay aligned with the backend.
       setUser({ ...(user ?? {}), ...updated })
     } catch (err) {
       console.warn('Failed to mark onboarding complete', err)
       toast.error('Could not save onboarding status. You can revisit later.')
     } finally {
+      if (celebrate) {
+        try {
+          sessionStorage.setItem('justOnboarded', '1')
+        } catch {
+          // sessionStorage can throw in some privacy modes — animation
+          // is a nice-to-have, not critical.
+        }
+      }
       router.replace('/dashboard/calendar')
     }
   }
+
+  const finishAndExit = () => exitToDashboard(true)
+  const skipAndExit = () => exitToDashboard(false)
 
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center px-4 py-10">
@@ -94,7 +107,7 @@ export function OnboardingWizard() {
             </span>
             <button
               type="button"
-              onClick={finishAndExit}
+              onClick={skipAndExit}
               disabled={isCompleting}
               aria-label="Skip onboarding"
               className={cn(
