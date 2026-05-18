@@ -19,7 +19,6 @@ interface PeriodStepProps {
   initialPeriod: Period | null
   onBack: () => void
   onCreated: (period: Period) => void
-  onSkip: () => void
 }
 
 /**
@@ -41,7 +40,6 @@ export function PeriodStep({
   initialPeriod,
   onBack,
   onCreated,
-  onSkip,
 }: PeriodStepProps) {
   const queryClient = useQueryClient()
   const errorRegionId = useId()
@@ -187,28 +185,16 @@ export function PeriodStep({
           {errorText ?? ''}
         </p>
 
-        <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3 pt-2">
-          <button
-            type="button"
-            onClick={onSkip}
-            disabled={isSubmitting}
-            className={cn(
-              'text-sm text-white/50 hover:text-white/80 transition-colors',
-              'font-jakarta underline-offset-4 hover:underline self-center sm:self-auto',
-              isSubmitting && 'opacity-50 cursor-not-allowed'
-            )}
-          >
-            Skip for now
-          </button>
-          <div className="flex items-center gap-2 justify-end">
+        <div className="flex items-center justify-end gap-2 pt-2">
             <button
               type="button"
               onClick={onBack}
               disabled={isSubmitting}
               className={cn(
-                'rounded-lg border border-white/15 bg-white/5 px-4 py-2 text-sm font-medium text-white/80',
+                'h-10 rounded-lg border border-white/15 bg-white/5 px-4 text-sm font-medium text-white/80',
                 'hover:bg-white/10 transition-colors',
                 'font-space-grotesk uppercase tracking-wide',
+                'focus:outline-none focus-visible:ring-2 focus-visible:ring-green-nice/60',
                 isSubmitting && 'opacity-50 cursor-not-allowed'
               )}
             >
@@ -218,9 +204,10 @@ export function PeriodStep({
               type="submit"
               disabled={isSubmitting}
               className={cn(
-                'rounded-lg bg-green-nice px-4 py-2 text-sm font-bold text-white',
+                'h-10 rounded-lg bg-green-nice px-4 text-sm font-bold text-white',
                 'hover:bg-green-nice/90 transition-colors',
                 'font-space-grotesk uppercase tracking-wide',
+                'focus:outline-none focus-visible:ring-2 focus-visible:ring-green-nice/60',
                 isSubmitting && 'opacity-60 cursor-not-allowed'
               )}
             >
@@ -236,7 +223,6 @@ export function PeriodStep({
                 'Next'
               )}
             </button>
-          </div>
         </div>
       </form>
     </div>

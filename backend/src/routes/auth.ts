@@ -246,6 +246,7 @@ router.get('/user', async (req, res): Promise<void> => {
                 email: user.email,
                 name: user.name,
                 picture: user.picture,
+                onboardingCompletedAt: user.onboardingCompletedAt?.toISOString() ?? null,
             }
         });
     } catch (error) {

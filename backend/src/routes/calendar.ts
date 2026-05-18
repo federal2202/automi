@@ -21,3 +21,4 @@ router.put('/events/:eventId', updateEvent);
 router.delete('/events/:eventId', deleteEvent);
 
 export default router;
+

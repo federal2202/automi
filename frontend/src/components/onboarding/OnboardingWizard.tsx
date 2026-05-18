@@ -2,8 +2,12 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { Check, X } from 'lucide-react'
+import { toast } from 'sonner'
 import { cn } from '@/utils/cn'
 import { Period } from '@/types/period'
+import { useAuthStore } from '@/stores/authStore'
+import { completeOnboarding } from '@/services/onboarding.service'
 import { WelcomeStep } from './steps/WelcomeStep'
 import { PeriodStep } from './steps/PeriodStep'
 import { ActivityStep } from './steps/ActivityStep'
@@ -20,18 +24,49 @@ const STEP_LABELS: readonly string[] = ['Welcome', 'Period', 'Activity'] as cons
  *  - `createdPeriod`: stash of the Period returned from step 2, so step 3
  *    knows which `periodId` to POST the new activity under.
  *
- * "Skip for now" on every step routes to `/dashboard/calendar`. The
- * dashboard layout's redirect guard treats the user as onboarded once any
- * Period exists, so skipping mid-wizard after creating a Period in step 2
- * is a legitimate exit path.
+ * The global Skip button in the wizard chrome and a successful Finish in
+ * step 3 are the only paths that flip the server-side
+ * `onboardingCompletedAt` flag. Closing the tab mid-wizard leaves the
+ * user in an un-onboarded state and the guard will route them back here
+ * on next visit.
  */
 export function OnboardingWizard() {
   const router = useRouter()
+  const user = useAuthStore((s) => s.user)
+  const setUser = useAuthStore((s) => s.setUser)
+
   const [step, setStep] = useState<StepIndex>(0)
   const [createdPeriod, setCreatedPeriod] = useState<Period | null>(null)
+  const [isCompleting, setIsCompleting] = useState(false)
 
-  const goToDashboard = () => {
-    router.replace('/dashboard/calendar')
+  /**
+   * Mark onboarding complete on the server, optimistically update the
+   * local auth store so the dashboard guard doesn't bounce the user
+   * back here mid-navigation, then route to the calendar. Failure is
+   * surfaced via toast but never traps the user.
+   */
+  const finishAndExit = async () => {
+    if (isCompleting) return
+    setIsCompleting(true)
+    // Optimistic flip — the guard re-evaluates synchronously off this.
+    if (user) {
+      setUser({
+        ...user,
+        onboardingCompletedAt:
+          user.onboardingCompletedAt ?? new Date().toISOString(),
+      })
+    }
+    try {
+      const updated = await completeOnboarding()
+      // Merge the server-truthful response so any other server-derived
+      // fields stay aligned with the backend.
+      setUser({ ...(user ?? {}), ...updated })
+    } catch (err) {
+      console.warn('Failed to mark onboarding complete', err)
+      toast.error('Could not save onboarding status. You can revisit later.')
+    } finally {
+      router.replace('/dashboard/calendar')
+    }
   }
 
   return (
@@ -42,83 +77,151 @@ export function OnboardingWizard() {
         <div
           className={cn(
             'rounded-2xl border border-white/10 bg-[#ffffff]/2 backdrop-blur-sm',
-            'p-6 sm:p-8 shadow-[0_20px_60px_-30px_rgba(0,0,0,0.6)]'
+            'shadow-[0_20px_60px_-30px_rgba(0,0,0,0.6)]',
+            'overflow-hidden'
           )}
         >
-          {step === 0 && (
-            <WelcomeStep
-              onNext={() => setStep(1)}
-              onSkip={goToDashboard}
-            />
-          )}
-          {step === 1 && (
-            <PeriodStep
-              initialPeriod={createdPeriod}
-              onBack={() => setStep(0)}
-              onCreated={(period) => {
-                setCreatedPeriod(period)
-                setStep(2)
-              }}
-              onSkip={goToDashboard}
-            />
-          )}
-          {step === 2 && createdPeriod && (
-            <ActivityStep
-              periodId={createdPeriod.id}
-              periodTitle={createdPeriod.title}
-              onBack={() => setStep(1)}
-              onFinished={goToDashboard}
-              onSkip={goToDashboard}
-            />
-          )}
-          {step === 2 && !createdPeriod && (
-            // Defensive: shouldn't be reachable through the UI (you can't get
-            // to step 2 without a period being stashed), but if state is ever
-            // out of sync we fall back to step 1 instead of rendering blank.
-            <PeriodStep
-              initialPeriod={null}
-              onBack={() => setStep(0)}
-              onCreated={(period) => {
-                setCreatedPeriod(period)
-                setStep(2)
-              }}
-              onSkip={goToDashboard}
-            />
-          )}
+          {/* Chrome bar: eyebrow label on left, global Skip on right */}
+          <div
+            className={cn(
+              'flex items-center justify-between gap-2',
+              'border-b border-white/5 bg-white/[0.015]',
+              'px-5 sm:px-7 py-3'
+            )}
+          >
+            <span className="text-[10px] uppercase tracking-[1.4px] text-white/40 font-space-grotesk font-bold">
+              Lifestyle Setup
+            </span>
+            <button
+              type="button"
+              onClick={finishAndExit}
+              disabled={isCompleting}
+              aria-label="Skip onboarding"
+              className={cn(
+                'inline-flex items-center gap-1.5 rounded-md px-2 py-1',
+                'text-xs text-white/60 hover:text-white hover:bg-white/5',
+                'font-space-grotesk uppercase tracking-wide transition-colors',
+                'focus:outline-none focus-visible:ring-2 focus-visible:ring-green-nice/60',
+                isCompleting && 'opacity-50 cursor-not-allowed'
+              )}
+            >
+              <span className="hidden sm:inline">Skip</span>
+              <X className="h-3.5 w-3.5" aria-hidden />
+            </button>
+          </div>
+
+          {/* Step body — keyed so each step re-mounts with the fade-in
+              animation defined in globals.css. */}
+          <div
+            key={step}
+            className="p-6 sm:p-8 animate-fade-in-up"
+          >
+            {step === 0 && <WelcomeStep onNext={() => setStep(1)} />}
+            {step === 1 && (
+              <PeriodStep
+                initialPeriod={createdPeriod}
+                onBack={() => setStep(0)}
+                onCreated={(period) => {
+                  setCreatedPeriod(period)
+                  setStep(2)
+                }}
+              />
+            )}
+            {step === 2 && createdPeriod && (
+              <ActivityStep
+                periodId={createdPeriod.id}
+                periodTitle={createdPeriod.title}
+                onBack={() => setStep(1)}
+                onFinished={finishAndExit}
+              />
+            )}
+            {step === 2 && !createdPeriod && (
+              // Defensive: shouldn't be reachable through the UI (you can't
+              // get to step 2 without a period being stashed), but if state
+              // is ever out of sync we fall back to step 1 instead of
+              // rendering blank.
+              <PeriodStep
+                initialPeriod={null}
+                onBack={() => setStep(0)}
+                onCreated={(period) => {
+                  setCreatedPeriod(period)
+                  setStep(2)
+                }}
+              />
+            )}
+          </div>
         </div>
       </div>
     </div>
   )
 }
 
+/**
+ * Numbered step indicator. Completed steps render a checkmark, the
+ * current step is filled with the brand color and pulses subtly,
+ * upcoming steps are muted. Circles are connected by a thin progress
+ * line whose filled portion tracks the current step.
+ */
 function StepIndicator({ current }: { current: StepIndex }) {
   return (
-    <div className="flex items-center justify-center gap-3">
+    <ol
+      role="list"
+      aria-label="Onboarding progress"
+      className="flex items-center justify-center gap-2 sm:gap-3"
+    >
       {STEP_LABELS.map((label, idx) => {
         const isActive = idx === current
         const isComplete = idx < current
+        const isLast = idx === STEP_LABELS.length - 1
         return (
-          <div key={label} className="flex items-center gap-2">
-            <div
-              aria-current={isActive ? 'step' : undefined}
-              className={cn(
-                'h-2 rounded-full transition-all duration-300',
-                isActive && 'w-8 bg-green-nice',
-                isComplete && 'w-2 bg-green-nice/60',
-                !isActive && !isComplete && 'w-2 bg-white/20'
-              )}
-            />
-            <span
-              className={cn(
-                'font-space-grotesk uppercase tracking-[1.1px] text-[10px]',
-                isActive ? 'text-white' : 'text-white/40'
-              )}
-            >
-              {label}
-            </span>
-          </div>
+          <li key={label} className="flex items-center gap-2 sm:gap-3">
+            <div className="flex items-center gap-2">
+              <span
+                aria-current={isActive ? 'step' : undefined}
+                className={cn(
+                  'flex h-6 w-6 items-center justify-center rounded-full',
+                  'text-[10px] font-bold font-space-grotesk',
+                  'transition-all duration-300',
+                  isComplete && 'bg-green-nice/80 text-white',
+                  isActive &&
+                    'bg-green-nice text-white ring-4 ring-green-nice/20 scale-110',
+                  !isActive &&
+                    !isComplete &&
+                    'bg-white/5 text-white/40 border border-white/10'
+                )}
+              >
+                {isComplete ? (
+                  <Check className="h-3 w-3" aria-hidden />
+                ) : (
+                  idx + 1
+                )}
+              </span>
+              <span
+                className={cn(
+                  'font-space-grotesk uppercase tracking-[1.1px] text-[10px]',
+                  'transition-colors duration-300',
+                  isActive
+                    ? 'text-white'
+                    : isComplete
+                      ? 'text-white/60'
+                      : 'text-white/30'
+                )}
+              >
+                {label}
+              </span>
+            </div>
+            {!isLast && (
+              <span
+                aria-hidden
+                className={cn(
+                  'h-px w-6 sm:w-10 rounded-full transition-colors duration-300',
+                  isComplete ? 'bg-green-nice/60' : 'bg-white/10'
+                )}
+              />
+            )}
+          </li>
         )
       })}
-    </div>
+    </ol>
   )
 }
