@@ -1,9 +1,9 @@
 import { google, Auth } from "googleapis";
-import { User } from "@prisma/client";
+import { UserModel } from "../../generated/prisma/models";
 import {prisma} from '../lib/prisma';
 import { Logger } from '../middleware/logger';
 
-export function createGoogleAuthClient(user: User): Auth.OAuth2Client {
+export function createGoogleAuthClient(user: UserModel): Auth.OAuth2Client {
     const oauth2Client = new google.auth.OAuth2(
         process.env.GOOGLE_CLIENT_ID,
         process.env.GOOGLE_CLIENT_SECRET,
@@ -18,7 +18,7 @@ export function createGoogleAuthClient(user: User): Auth.OAuth2Client {
 }
 
 // Auto-refresh tokens when expired
-export async function createCalendarClient(user: User) {
+export async function createCalendarClient(user: UserModel) {
     const oauth2Client = createGoogleAuthClient(user);
     
     // Check for token expiration
