@@ -9,7 +9,7 @@ import { CalendarEvent, CalendarView } from '@/types/calendar/calendar.types'
 import { CalendarEvent as CalendarEventComponent } from './CalendarEvent'
 import { CalendarDayHeader } from './CalendarDayHeader'
 import { getAvailableViews, getCalendarFormats } from '@/utils/calendar/dateUtils'
-import { useEventManagement } from '@/stores/calendarStore'
+import { useEventManagement } from '@/stores/calendarHooks'
 import 'react-big-calendar/lib/css/react-big-calendar.css'
 import 'react-big-calendar/lib/addons/dragAndDrop/styles.css'
 

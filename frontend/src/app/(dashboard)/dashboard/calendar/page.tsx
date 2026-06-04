@@ -3,13 +3,15 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { WeeklyCalendar } from '@/components/calendar'
-import { useAuthStore } from '@/stores/authStore'
+import { useAppSelector } from '@/stores/hooks'
 import { Loader } from '@/components/shared/Loader'
 import '@/styles/calendar.css'
 
 export default function CalendarPage() {
     const router = useRouter()
-    const { isAuthenticated, isLoading, isInitialized } = useAuthStore()
+    const isAuthenticated = useAppSelector((s) => s.auth.isAuthenticated)
+    const isLoading = useAppSelector((s) => s.auth.isLoading)
+    const isInitialized = useAppSelector((s) => s.auth.isInitialized)
 
     useEffect(() => {
         // Only redirect once auth has been definitively checked at least once.

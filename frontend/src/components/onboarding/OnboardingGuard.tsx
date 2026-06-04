@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
-import { useAuthStore } from '@/stores/authStore'
+import { useAppSelector } from '@/stores/hooks'
 
 /**
  * Dashboard-side onboarding redirect guard.
@@ -23,8 +23,8 @@ import { useAuthStore } from '@/stores/authStore'
 export function OnboardingGuard() {
   const router = useRouter()
   const pathname = usePathname()
-  const isInitialized = useAuthStore((s) => s.isInitialized)
-  const user = useAuthStore((s) => s.user)
+  const isInitialized = useAppSelector((s) => s.auth.isInitialized)
+  const user = useAppSelector((s) => s.auth.user)
 
   useEffect(() => {
     if (!isInitialized || !user) return

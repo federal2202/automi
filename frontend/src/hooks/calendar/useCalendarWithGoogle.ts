@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useEffect } from 'react'
-import { useCalendarState, useCalendarActions } from '@/stores/calendarStore'
+import { useCalendarState, useCalendarActions } from '@/stores/calendarHooks'
 import { useGoogleCalendarEvents, useGoogleCalendars } from '@/hooks/calendar/useGoogleCalendar'
 import { useEventGeneration } from '@/hooks/calendar/useEventGeneration'
 import { getCalendarDateRange } from '@/utils/calendar/calendar-transform.utils'

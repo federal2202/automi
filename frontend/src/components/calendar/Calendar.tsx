@@ -10,7 +10,7 @@ import { FloatingChatButton } from './FloatingChatButton'
 import { EventModal } from './EventModal'
 import { DeleteConfirmationDialog, useDeleteConfirmation } from './DeleteConfirmationDialog'
 import { useCalendarWithGoogle } from '@/hooks/calendar/useCalendarWithGoogle'
-import { useCalendarActions, useEventManagement } from '@/stores/calendarStore'
+import { useCalendarActions, useEventManagement } from '@/stores/calendarHooks'
 import { Loader } from '@/components/shared/Loader'
 
 /**

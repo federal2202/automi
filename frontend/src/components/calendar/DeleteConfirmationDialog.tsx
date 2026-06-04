@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from 'react'
-import { useEventManagement } from '@/stores/calendarStore'
+import { useEventManagement } from '@/stores/calendarHooks'
 import { CalendarEvent } from '@/types/calendar/calendar.types'
 import {
   Dialog,

@@ -4,7 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import Logo from "../shared/Logo"
 import { cn } from "@/utils/cn"
-import { useAuthStore } from "@/stores/authStore"
+import { useAppSelector } from "@/stores/hooks"
 import {
   Sidebar,
   SidebarContent,
@@ -28,7 +28,8 @@ import {
 
 export default function AppSidebar() {
   const { toggleSidebar, state } = useSidebar()
-  const { user, isAuthenticated } = useAuthStore()
+  const user = useAppSelector((s) => s.auth.user)
+  const isAuthenticated = useAppSelector((s) => s.auth.isAuthenticated)
   const collapsed = state === "collapsed"
   const pathname = usePathname()
 

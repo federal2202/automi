@@ -1,6 +1,6 @@
 "use client"
 
-import { useEventManagement } from '@/stores/calendarStore'
+import { useEventManagement } from '@/stores/calendarHooks'
 import {
   Dialog,
   DialogContent,

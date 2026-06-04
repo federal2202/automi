@@ -7,15 +7,14 @@
 export * from '@/types/calendar/calendar.types'
 
 // Hooks (avoid conflicts by being more specific)
-export { 
-  useCalendarStore,
+export {
   useCalendarState,
   useCalendarUIState,
   useCalendarActions,
   useCalendarNavigation,
   useEventManagement,
-  useCalendarWithEvents 
-} from '@/stores/calendarStore'
+  useCalendarWithEvents
+} from '@/stores/calendarHooks'
 export * from '@/hooks/calendar/useEventGeneration'
 
 // Utilities

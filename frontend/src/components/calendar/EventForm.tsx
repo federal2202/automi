@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, type FormEvent } from 'react'
-import { useEventManagement } from '@/stores/calendarStore'
+import { useEventManagement } from '@/stores/calendarHooks'
 import { CalendarEvent, EventType } from '@/types/calendar/calendar.types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'

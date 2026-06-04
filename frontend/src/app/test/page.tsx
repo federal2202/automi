@@ -1,11 +1,11 @@
 "use client";
 
 
-import { useAuthStore } from '@/stores/authStore';
+import { useAppSelector } from '@/stores/hooks';
 
 
 export default function Page(){
-  const user = useAuthStore((state) => state.user);
+  const user = useAppSelector((state) => state.auth.user);
 
   return (
     <div>
