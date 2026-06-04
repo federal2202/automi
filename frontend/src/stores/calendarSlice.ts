@@ -6,6 +6,8 @@
  * current date/view, the selected calendar, modal state, and transient
  * loading/error flags.
  *
+ * State shape and types live in `calendar/calendarSlice.types.ts`.
+ *
  * DATE-IN-STATE DECISION (doc Phase B, Option 1):
  * We keep raw `Date` objects in state (`currentDate`, `selectedSlot.start/end`)
  * to preserve parity with the previous Zustand store and avoid a wider refactor
@@ -20,44 +22,17 @@ import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
 import { CalendarView, NavigationDirection } from '@/types/calendar/calendar.types'
 import { navigateCalendarDate } from '@/utils/calendar/dateUtils'
 
-/**
- * Calendar API Error Interface
- * Represents errors that can occur during calendar operations.
- */
-export interface CalendarApiError {
-  readonly message: string
-  readonly type: string
-  readonly details?: Record<string, unknown>
-}
+import {
+  type CalendarApiError,
+  type CalendarState,
+  initialCalendarState,
+} from './calendar/calendarSlice.types'
 
-/**
- * Calendar UI state shape (ported 1:1 from the Zustand store).
- */
-export interface CalendarState {
-  currentDate: Date
-  view: CalendarView
-  selectedCalendarId: string
-  isEventModalOpen: boolean
-  selectedEventId: string | null
-  selectedSlot: { start: Date; end: Date } | null
-  isLoading: boolean
-  error: CalendarApiError | null
-}
-
-const initialState: CalendarState = {
-  currentDate: new Date(),
-  view: 'week' as CalendarView,
-  selectedCalendarId: 'primary',
-  isEventModalOpen: false,
-  selectedEventId: null,
-  selectedSlot: null,
-  isLoading: false,
-  error: null,
-}
+export type { CalendarApiError, CalendarState }
 
 const calendarSlice = createSlice({
   name: 'calendar',
-  initialState,
+  initialState: initialCalendarState,
   reducers: {
     setCurrentDate(state, action: PayloadAction<Date>) {
       state.currentDate = action.payload
