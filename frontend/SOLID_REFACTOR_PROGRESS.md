@@ -28,7 +28,7 @@
 | 6 | Calendar — utils (transform, styles, dates, formats) | ✅ | `6051459` |
 | 7 | Calendar — services (`calendar.service.ts`) | ✅ | `4ac7ae9` |
 | 8 | Calendar — types (`google-calendar.types.ts`, `calendar.types.ts`) | ✅ | `4ac7ae9` |
-| 9 | Calendar — components (EventForm, CalendarGrid, Calendar, Toolbar, DeleteDialog) | ✅ | _pending commit_ |
+| 9 | Calendar — components (EventForm, CalendarGrid, Calendar, Toolbar, DeleteDialog) | ✅ | `7efd272` |
 | 10 | Calendar — hooks (useEventGeneration, useCalendarWithGoogle) | ⬜ | — |
 | 11 | Tasks (`TaskDetailDialog.tsx`) | ⬜ | — |
 | 12 | Shared (`Loader.tsx`) | ⬜ | — |
