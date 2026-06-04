@@ -29,10 +29,12 @@
 | 7 | Calendar — services (`calendar.service.ts`) | ✅ | `4ac7ae9` |
 | 8 | Calendar — types (`google-calendar.types.ts`, `calendar.types.ts`) | ✅ | `4ac7ae9` |
 | 9 | Calendar — components (EventForm, CalendarGrid, Calendar, Toolbar, DeleteDialog) | ✅ | `7efd272` |
-| 10 | Calendar — hooks (useEventGeneration, useCalendarWithGoogle) | ⬜ | — |
-| 11 | Tasks (`TaskDetailDialog.tsx`) | ⬜ | — |
-| 12 | Shared (`Loader.tsx`) | ⬜ | — |
-| 13 | Landing (`AboutSection.tsx`) | ⬜ | — |
+| 10 | Calendar — hooks (useEventGeneration, useCalendarWithGoogle) | ✅ | `5a153b4` |
+| 11 | Tasks (`TaskDetailDialog.tsx`) | ✅ | `4dd1dcb` |
+| 12 | Shared (`Loader.tsx`) | ✅ | `f996655` |
+| 13 | Landing (`AboutSection.tsx`) | ✅ | `bbb7f64` |
+
+> ✅ **Все домены 1–13 завершены.** Остались только файлы, помеченные `(review)` ниже — они лишь немного > 100 строк; дробить по желанию.
 
 ---
 
@@ -45,21 +47,21 @@
 | `types/google-calendar.types.ts` | 290 | 8 |
 | `components/calendar/EventForm.tsx` | 298 | 9 |
 | `components/calendar/CalendarGrid.tsx` | 226 | 9 |
-| `hooks/calendar/useEventGeneration.ts` | 218 | 10 |
+| `hooks/calendar/useEventGeneration.ts` | 218 | 10 ✅ |
 | `utils/calendar/calendarStyles.ts` | 209 | 6 |
 | `components/calendar/Calendar.tsx` | 202 | 9 |
 | `utils/calendar/dateUtils.ts` | 177 | 6 |
 | `types/calendar/calendar.types.ts` | 170 | 8 |
-| `components/tasks/TaskDetailDialog.tsx` | 164 | 11 |
-| `components/shared/Loader.tsx` | 152 | 12 |
+| `components/tasks/TaskDetailDialog.tsx` | 164 | 11 ✅ |
+| `components/shared/Loader.tsx` | 152 | 12 ✅ |
 | `stores/calendar/useEventManagement.ts` | 150 | (review) |
 | `hooks/periods/usePeriodDetail.ts` | 146 | (review) |
 | `components/calendar/DeleteConfirmationDialog.tsx` | 137 | 9 |
 | `utils/calendar/calendarFormats.ts` | 132 | 6 |
 | `components/activities/recurring-activity-form/useRecurringActivityForm.ts` | 124 | (review) |
-| `hooks/calendar/useCalendarWithGoogle.ts` | 121 | 10 |
+| `hooks/calendar/useCalendarWithGoogle.ts` | 121 | 10 ✅ |
 | `hooks/periods/usePeriods.ts` | 119 | (review) |
-| `components/landing/AboutSection.tsx` | 116 | 13 |
+| `components/landing/AboutSection.tsx` | 116 | 13 ✅ |
 | `services/activities.service.ts` | 112 | (review) |
 | `stores/authSlice.ts` | 106 | (review) |
 | `stores/calendarSlice.ts` | 103 | (review) |
