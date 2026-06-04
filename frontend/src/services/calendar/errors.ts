@@ -2,7 +2,7 @@
  * Calendar service error handling
  */
 
-import { CalendarServiceError } from '@/types/google-calendar.types'
+import { CalendarServiceError, GoogleCalendarError } from '@/types/google-calendar.types'
 
 /**
  * Calendar service error handler
@@ -14,7 +14,12 @@ import { CalendarServiceError } from '@/types/google-calendar.types'
 export const handleCalendarServiceError = (error: unknown): CalendarServiceError => {
   // Network/axios error
   if (error && typeof error === 'object' && 'response' in error) {
-    const axiosError = error as any
+    const axiosError = error as {
+      response?: {
+        status?: number
+        data?: GoogleCalendarError
+      }
+    }
 
     if (axiosError.response?.status === 401) {
       return {

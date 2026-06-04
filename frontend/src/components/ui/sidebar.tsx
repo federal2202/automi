@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useEffect, useState, useCallback, useMemo, forwardRef, type ComponentProps, type HTMLAttributes, type CSSProperties } from "react"
+import { createContext, useContext, useEffect, useState, useCallback, useMemo, type ComponentProps, type CSSProperties } from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { Slot } from "radix-ui"
 

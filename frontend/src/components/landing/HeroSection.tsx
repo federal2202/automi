@@ -1,7 +1,6 @@
 "use client"
 
 
-import Navbar from "../Navigation";
 import BreakthroughSection from "../shared/BreakThorugh";
 import Button from "../shared/Button";
 import SecondaryText from "../shared/SecondaryText";

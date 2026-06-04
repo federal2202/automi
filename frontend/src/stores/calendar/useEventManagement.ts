@@ -68,7 +68,7 @@ export const useEventManagement = () => {
       if (found) return found
     }
     return null
-  }, [selectedEventId, queryClient, isEventModalOpen])
+  }, [selectedEventId, queryClient])
 
   const createEvent = async (eventData: Omit<CalendarEvent, 'id'>) => {
     try {

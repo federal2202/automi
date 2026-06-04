@@ -26,7 +26,6 @@ export function GoogleCalendarProvider({ children }: GoogleCalendarProviderProps
 
   // Fetch Google Calendar events for current date range
   const {
-    data: events = [],
     isLoading,
     error,
     refetch

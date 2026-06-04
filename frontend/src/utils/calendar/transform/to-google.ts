@@ -15,7 +15,7 @@ import { CalendarEvent, EventType } from '@/types/calendar/calendar.types'
  */
 export const transformCalendarEventToGoogle = (
   calendarEvent: Omit<CalendarEvent, 'id'>,
-  calendarId: string
+  _calendarId: string
 ): Partial<GoogleCalendarItem> => {
   // Convert dates to Google Calendar DateTime format
   const start: GoogleCalendarDateTime = {

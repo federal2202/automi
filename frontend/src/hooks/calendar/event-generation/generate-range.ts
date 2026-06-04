@@ -21,7 +21,7 @@ export function parseHHMM(value: string): { hour: number; minute: number } {
  * Generate events for a specific date range
  * Future utility for dynamic event generation
  */
-export const generateEventsForRange = (startDate: Date, endDate: Date): CalendarEvent[] => {
+export const generateEventsForRange = (startDate: Date, _endDate: Date): CalendarEvent[] => {
   // This function can be expanded to generate events for specific date ranges
   // Currently returns the sample events, but could be modified to generate
   // events relative to the provided date range
