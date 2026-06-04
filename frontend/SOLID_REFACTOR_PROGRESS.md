@@ -24,8 +24,8 @@
 | 2 | Activities (recurring dialog & card) | ✅ | `f25e68f`, `2f21ab0` |
 | 3 | Periods (pages, form, dialogs) | ✅ | `371469b` |
 | 4 | Onboarding (wizard & steps) | ✅ | `5f21d05` |
-| 5 | **Calendar — Google hooks** | 🔄 | _pending commit_ |
-| 6 | Calendar — utils (transform, styles, dates, formats) | ⬜ | — |
+| 5 | Calendar — Google hooks | ✅ | `b5dc00a` |
+| 6 | Calendar — utils (transform, styles, dates, formats) | 🔄 | _agent running_ |
 | 7 | Calendar — services (`calendar.service.ts`) | ⬜ | — |
 | 8 | Calendar — types (`google-calendar.types.ts`, `calendar.types.ts`) | ⬜ | — |
 | 9 | Calendar — components (EventForm, CalendarGrid, Calendar, Toolbar, DeleteDialog) | ⬜ | — |
