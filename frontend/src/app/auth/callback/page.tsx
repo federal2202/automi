@@ -2,14 +2,15 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuthStore } from '@/stores/authStore';
+import { useAppDispatch } from '@/stores/hooks';
+import { setUser } from '@/stores/authSlice';
 import { parseUserFromUrl } from '@/utils/auth';
 import { FullScreenLoader } from '@/components/shared/Loader';
 import { getPeriods } from '@/services/periods.service';
 
 export default function CallbackPage() {
   const router = useRouter();
-  const { setUser } = useAuthStore();
+  const dispatch = useAppDispatch();
 
   useEffect(() => {
     const handleCallback = async () => {
@@ -33,7 +34,7 @@ export default function CallbackPage() {
         }
 
         // Set user in store (tokens are automatically in httpOnly cookies)
-        setUser(userData);
+        dispatch(setUser(userData));
 
         console.log('Authentication successful:', userData);
 
@@ -63,7 +64,7 @@ export default function CallbackPage() {
     };
 
     void handleCallback();
-  }, [router, setUser]);
+  }, [router, dispatch]);
 
   return <FullScreenLoader intense label="COMPLETING LOGIN // AUTH PROTOCOL" />;
 }

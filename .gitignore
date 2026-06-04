@@ -1,0 +1,42 @@
+# Dependencies — should only live under each package (frontend/, backend/)
+node_modules/
+.pnp
+.pnp.*
+
+# Stray root-level package files (deps belong under frontend/ or backend/)
+/package.json
+/package-lock.json
+/pnpm-lock.yaml
+/yarn.lock
+
+# Build artifacts
+.next/
+dist/
+build/
+out/
+*.tsbuildinfo
+
+# Env & secrets
+.env
+.env.*
+!.env.example
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Coverage / test
+coverage/
+
+# Vercel
+.vercel

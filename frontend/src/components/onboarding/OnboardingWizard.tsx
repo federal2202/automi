@@ -6,7 +6,8 @@ import { Check, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/utils/cn'
 import { Period } from '@/types/period'
-import { useAuthStore } from '@/stores/authStore'
+import { useAppDispatch, useAppSelector } from '@/stores/hooks'
+import { setUser } from '@/stores/authSlice'
 import { completeOnboarding } from '@/services/onboarding.service'
 import { WelcomeStep } from './steps/WelcomeStep'
 import { PeriodStep } from './steps/PeriodStep'
@@ -32,8 +33,8 @@ const STEP_LABELS: readonly string[] = ['Welcome', 'Period', 'Activity'] as cons
  */
 export function OnboardingWizard() {
   const router = useRouter()
-  const user = useAuthStore((s) => s.user)
-  const setUser = useAuthStore((s) => s.setUser)
+  const user = useAppSelector((state) => state.auth.user);
+  const dispatch = useAppDispatch();
 
   const [step, setStep] = useState<StepIndex>(0)
   const [createdPeriod, setCreatedPeriod] = useState<Period | null>(null)
@@ -54,15 +55,15 @@ export function OnboardingWizard() {
     setIsCompleting(true)
     // Optimistic flip — the guard re-evaluates synchronously off this.
     if (user) {
-      setUser({
+      dispatch(setUser({
         ...user,
         onboardingCompletedAt:
           user.onboardingCompletedAt ?? new Date().toISOString(),
-      })
+      }))
     }
     try {
       const updated = await completeOnboarding()
-      setUser({ ...(user ?? {}), ...updated })
+      dispatch(setUser({ ...(user ?? {}), ...updated }))
     } catch (err) {
       console.warn('Failed to mark onboarding complete', err)
       toast.error('Could not save onboarding status. You can revisit later.')

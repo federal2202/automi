@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect } from 'react';
-import { useAuthStore } from '@/stores/authStore';
+import { useAppDispatch, useAppSelector } from '@/stores/hooks'
+import { checkAuth, syncDeviceTimezone } from '@/stores/authSlice'
 
 /**
  * App-boot side-effects:
@@ -12,23 +13,21 @@ import { useAuthStore } from '@/stores/authStore';
  *      anchored to the user's actual locale without surfacing UI.
  */
 export function AuthInitializer() {
-  const checkAuth = useAuthStore((state) => state.checkAuth);
-  const syncDeviceTimezone = useAuthStore((state) => state.syncDeviceTimezone);
-  const user = useAuthStore((state) => state.user);
-  const isInitialized = useAuthStore((state) => state.isInitialized);
-
+  const dispatch = useAppDispatch();
+  const user = useAppSelector((state) => state.auth.user);
+  const isInitialized = useAppSelector((state) => state.auth.isInitialized);
   useEffect(() => {
-    checkAuth();
-  }, [checkAuth]);
+    dispatch(checkAuth())
+  }, [dispatch]);
 
   useEffect(() => {
     if (!isInitialized || !user) return;
-    void syncDeviceTimezone();
+    void dispatch(syncDeviceTimezone());
     // We intentionally only re-run when the user id flips or initialization
     // completes — not on every user object mutation, to avoid loops when
     // `syncDeviceTimezone` itself updates the user.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isInitialized, user?.id]);
+  }, [isInitialized, user?.id, dispatch]);
 
   return null;
 }

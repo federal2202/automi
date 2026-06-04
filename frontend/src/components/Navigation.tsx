@@ -4,10 +4,10 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Button from './shared/Button';
 import Logo from './shared/Logo';
-import { useAuthStore } from '@/stores/authStore';
+import { useAppSelector } from '@/stores/hooks';
 
 export default function Navbar(){
-  const { isAuthenticated } = useAuthStore();
+  const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated)
   const router = useRouter();
 
   return (
