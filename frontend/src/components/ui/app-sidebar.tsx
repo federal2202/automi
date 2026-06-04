@@ -4,8 +4,8 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import Logo from "../shared/Logo"
 import { cn } from "@/utils/cn"
-import { useAppSelector } from "@/stores/hooks"
 import { useCalendarActions } from "@/stores/calendar/useCalendarActions"
+import { SidebarUserButton } from "@/components/account"
 import {
   Sidebar,
   SidebarContent,
@@ -29,8 +29,6 @@ import {
 
 export default function AppSidebar() {
   const { toggleSidebar, state } = useSidebar()
-  const user = useAppSelector((s) => s.auth.user)
-  const isAuthenticated = useAppSelector((s) => s.auth.isAuthenticated)
   const collapsed = state === "collapsed"
   const pathname = usePathname()
   const router = useRouter()
@@ -190,7 +188,8 @@ export default function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      {/* User profile. Collapsed -> a single centered avatar. */}
+      {/* User profile. Clickable -> opens account dialog with logout.
+          Collapsed -> a single centered avatar. */}
       <SidebarFooter
         className={cn(
           "border-t border-sidebar-border/50",
@@ -198,32 +197,7 @@ export default function AppSidebar() {
           "group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center"
         )}
       >
-        {isAuthenticated && (
-          <div
-            className={cn(
-              "flex items-center gap-3 min-w-0",
-              "group-data-[collapsible=icon]:gap-0 group-data-[collapsible=icon]:justify-center"
-            )}
-          >
-            <div
-              className={cn(
-                "flex items-center justify-center rounded-full",
-                "bg-green-nice/20 text-green-nice font-bold text-sm",
-                "h-9 w-9 shrink-0"
-              )}
-            >
-              <span>{user?.name?.charAt(0) || "U"}</span>
-            </div>
-            <div className="flex-1 min-w-0 group-data-[collapsible=icon]:hidden">
-              <p className="text-sm font-medium text-sidebar-foreground truncate">
-                {user?.name || "User"}
-              </p>
-              <p className="text-xs text-sidebar-foreground/60 truncate">
-                {user?.email || "user@example.com"}
-              </p>
-            </div>
-          </div>
-        )}
+        <SidebarUserButton />
       </SidebarFooter>
     </Sidebar>
   )

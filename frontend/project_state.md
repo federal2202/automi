@@ -1,5 +1,15 @@
 # NotebookLM Project State Documentation
 
+> **State map regenerated 2026-06-04** by sweeping the live `frontend/src` tree (4 parallel explore agents: data/state layer, routes, components, types/utils/config/build). The dated changelog below is preserved as history; the reference sections after it (Architecture → Build Health) describe the **current** codebase. Note: the old "Zustand `calendarStore.ts`" sections were removed — that store no longer exists, calendar UI state now lives in a Redux Toolkit slice.
+
+**Tasks feature — Execution Queue (after 2026-05-15)** — New `/dashboard/tasks` route renders a task list ("Execution Queue"). `services/tasks.service.ts` (`tasksService`) calls `GET /tasks`, `GET /tasks/{id}`, `PATCH /tasks/{id}/done`. `types/task.ts` defines `Task`, `Step`, `Resource`. Components: `tasks/TaskCard.tsx`, `TaskList.tsx`, `TaskDetailDialog.tsx`, decomposed `tasks/task-detail/` sections (description, badges, steps, resources, success criteria, done button). Fetched via TanStack Query.
+
+**Account UI + logout (after 2026-05-15)** — Sidebar footer now has a user block opening an account dialog. New `components/account/`: `SidebarUserButton.tsx`, `AccountDialog.tsx`, `LogoutConfirmDialog.tsx`, `UserAvatar.tsx`. `hooks/auth/useLogout.ts` POSTs `/auth/logout` (best-effort), dispatches Redux `logout()`, routes to `/signup`. New `app/signup/page.tsx` is the Google-OAuth entry page ("Continue with Google" → `http://localhost:8000/auth/google`).
+
+**Server-backed onboarding flag (after 2026-05-15)** — Onboarding completion is now a real server field: `User.onboardingCompletedAt`. `services/onboarding.service.ts` POSTs `/me/onboarding/complete` (idempotent). `OnboardingGuard` redirects to `/onboarding` when that field is null (superseding the earlier "derive from ≥1 period" heuristic). Onboarding wizard decomposed under `components/onboarding/` (WizardChrome, WizardSteps, StepIndicator, `useOnboardingNavigation`) with per-step subfolders `steps/period-step/` and `steps/activity-step/`.
+
+**SOLID refactor COMPLETE (all 13 domains)** — The `<100-line` SOLID decomposition tracked in `SOLID_REFACTOR_PROGRESS.md` is finished across stores, activities, periods, onboarding, calendar (google hooks, utils, services, types, components, hooks), tasks, shared, landing. Parent components keep thin re-export shims (e.g. `calendar/Calendar.tsx` → `calendar/calendar-main/`). A handful of files remain >100 lines as known non-critical review items (calendar-transform utils, calendar.service barrel, google-calendar types, EventForm, CalendarGrid). `pnpm tsc --noEmit` and `pnpm lint` both pass clean as of 2026-06-04.
+
 **3-step onboarding wizard (2026-05-15)** — New onboarding flow at `/onboarding` for first-time users. No backend changes; "onboarded" is derived purely from `GET /periods` (≥1 period). Every step has a "Skip for now" link that exits to `/dashboard/calendar`.
 - Steps live in a single route with local `useState` step index (no URL change between steps):
   1. `WelcomeStep` — short explainer for Periods + Activities concepts with examples.
@@ -47,7 +57,7 @@
 
 **Steps 4-8 — Google Calendar lifecycle sync (frontend half) (2026-05-14)** — backend now auto-syncs activity/period CRUD to Google Calendar; the frontend surfaces it without inventing UI:
 - `User` type gained optional `timezone: string` (`src/types/User.ts`).
-- `authStore` gained `syncDeviceTimezone()` action: reads `Intl.DateTimeFormat().resolvedOptions().timeZone`, PATCHes `/me/timezone` only when it diverges from `user.timezone`, merges the response into local state, and silently `console.warn`s on failure (never blocks the app).
+- `authStore` gained `syncDeviceTimezone()` action: reads `Intl.DateTimeFormat().resolvedOptions().timeZone`, PATCHes `/me/timezone` only when it diverges from `user.timezone`, merges the response into local state, and silently `console.warn`s on failure (never blocks the app). _(Now a Redux thunk on `authSlice` — see Architecture.)_
 - `AuthInitializer` now runs `syncDeviceTimezone()` once after `isInitialized && user.id` flips truthy — deps intentionally pinned to `user?.id` to avoid loops when the action itself updates the user.
 - Installed `sonner@^2.0.7`. Mounted a single `<Toaster theme="dark" position="bottom-right" richColors closeButton />` in `(dashboard)/dashboard/layout.tsx` so toasts work across every dashboard route.
 - `services/activities.service.ts` response types extended with `sync` envelopes (`CreateSyncResult`, `UpdateSyncResult`, `DeleteSyncResult`). `deleteActivity` now normalizes 204 vs 200-with-errors into a discriminated `DeleteActivityResult = { kind: 'ok' } | { kind: 'partial', id, sync }` so callers don't have to inspect the HTTP status.
@@ -77,531 +87,131 @@
 - `PeriodCard`: wrapped in `React.memo`; `daysBetween` returns `null` when `end < start` instead of clamping to 1; hardcoded hex colors replaced with `text-text-primary` / `text-text-muted` tokens.
 - `types/period.ts`: `UpdatePeriodInput = CreatePeriodInput` (not `Partial<…>`) — the form submits the full record so no cast needed in the page.
 - `periods/page.tsx`: replaced `window.confirm` with new `ConfirmDeleteDialog` (custom Dialog — we don't ship `@radix-ui/react-alert-dialog`); React Query gets `staleTime: 30_000`; mutations invalidate the cache instead of writing partial server-derived state via `setQueryData`; `openCreate`/`openEdit`/`requestDelete` are `useCallback`-stabilized; `extractAxiosErrorMessage` hoisted to `src/utils/api-error.ts` for Step 2/3 reuse.
-- `app-sidebar.tsx`: `isActive` now derives from `usePathname()` (exact match or descendant); `<a href>` swapped for `next/link` to preserve React Query cache and Zustand state across nav.
+- `app-sidebar.tsx`: `isActive` now derives from `usePathname()` (exact match or descendant); `<a href>` swapped for `next/link` to preserve React Query cache and client state across nav.
 - `globals.css`: added `--bg-surface` / `--text-primary` / `--text-muted` CSS vars and registered matching utilities through `@theme inline` (`bg-bg-surface`, `text-text-primary`, `text-text-muted`).
 - New files: `src/utils/api-error.ts`, `src/components/periods/ConfirmDeleteDialog.tsx`.
 
-**Generated**: 2026-04-20  
-**Project Version**: Authentication Integration Phase  
-**Quality Status**: Ready for Authentication Implementation  
+---
+
+# Current Architecture (snapshot 2026-06-04)
+
+**Project Version**: Product feature build-out (Periods · Recurring Activities · Tasks · Google Calendar sync · Onboarding · Account)
+**Build Health**: `pnpm tsc --noEmit` ✅ clean · `pnpm lint` ✅ clean
 
 ## Executive Summary
 
-NotebookLM is a Next.js 16.2.2 application featuring both a landing page and a fully interactive dashboard with calendar functionality. The project has evolved from a basic MVP to a production-ready application with comprehensive event management capabilities.
+NotebookLM is a Next.js 16.2.2 / React 19 application: a marketing landing page plus an authenticated dashboard. The dashboard's domain model is **Periods** (date ranges) → **Recurring Activities** (per-weekday schedules), which the backend auto-syncs to **Google Calendar**; the frontend reads those events back through a Google Calendar API layer and renders them in a React Big Calendar view. Additional features: a **Tasks** "Execution Queue", a 3-step **onboarding** wizard, and an **account** dialog with logout. State is split between **Redux Toolkit** (client/UI state) and **TanStack Query** (server cache). The entire `src/` tree has been decomposed into SOLID modules (<100 lines each).
 
-### Current Status ✅
-- **Interactive Calendar System**: Full CRUD operations with drag-and-drop functionality
-- **Modern Tech Stack**: Next.js 16.2.2, React 19, TypeScript, Tailwind CSS 4
-- **Production Architecture**: Modular components, Zustand state management, responsive design
-- **Multiple Access Points**: Available on both `/dashboard` and `/calendar` routes
+## Technology Stack
 
-### Ready For
-- ✅ **Frontend Development**: All UI components and interactions complete
-- ✅ **Backend Integration**: Store architecture prepared for API connections  
-- ✅ **Backend API**: Complete authentication system with Google OAuth ready at localhost:8000
-- ✅ **User Testing**: Fully functional calendar with proper error handling
-- 🚧 **Authentication Integration**: Implementation plan created, ready to begin
-- 🚧 **Production Deployment**: Requires frontend authentication implementation
+### Core
+- **Next.js** 16.2.2 (App Router) · **React** 19.2.4 · **TypeScript** 5 (strict, `@/*` → `./src/*`)
+- **Tailwind CSS** 4 (`@theme inline` in `globals.css`) · **shadcn/ui** (radix-nova style, base color neutral)
 
-## Technology Stack & Dependencies
+### State & Data
+- **@reduxjs/toolkit** 2.12.0 + **react-redux** 9.3.0 — global client/UI state
+- **@tanstack/react-query** 5.100.1 (+ devtools) — server cache
+- **axios** 1.15.1 — HTTP client (`withCredentials`, 401-refresh interceptor)
+- ⚠️ **No Zustand** — fully migrated to Redux. Any doc/comment referencing `calendarStore.ts` is historical.
 
-### Core Framework
-- **Next.js**: 16.2.2 with App Router (latest stable)
-- **React**: 19.2.4 (latest major version)
-- **TypeScript**: 5.x with strict configuration
-- **Node.js**: Compatible with modern LTS versions
+### UI & Calendar
+- **react-big-calendar** 1.19.4 + **react-dnd** 16.0.1 (+ html5-backend) — calendar + drag/drop
+- **moment** 2.30.1 (BigCalendar localizer) · **date-fns** 4.1.0 (formatting)
+- **lucide-react** (icons) · **sonner** 2.0.7 (toasts) · **class-variance-authority** / **clsx** / **tailwind-merge**
+- **@radix-ui/react-{dialog,label,select}** via shadcn
 
-### UI & Styling
-- **Tailwind CSS**: 4.x (latest major version)
-- **shadcn/ui**: Radix-based components with consistent theming
-- **CSS Variables**: Custom theming system with dark mode focus
-- **Responsive Design**: Mobile-first with comprehensive breakpoints
+### Tooling
+- PNPM (`pnpm-lock.yaml`) · ESLint 9 (+ eslint-config-next 16.2.2)
+- Scripts: `pnpm dev` · `pnpm build` · `pnpm start` · `pnpm lint` · `pnpm tsc --noEmit`
 
-### Calendar-Specific Dependencies
-- **react-big-calendar**: 1.19.4 (main calendar engine)
-- **react-dnd**: 16.0.1 (drag-and-drop functionality)
-- **zustand**: 5.0.12 (state management)
-- **moment.js**: 2.30.1 (date manipulation)
-- **date-fns**: 4.1.0 (date formatting utilities)
+## Routes & Layout Hierarchy
 
-### Development Tools
-- **Package Manager**: PNPM (lockfile: pnpm-lock.yaml)
-- **Linting**: ESLint with Next.js configuration
-- **Type Checking**: TypeScript compiler with strict mode
-
-## Project Architecture
-
-### App Router Structure
 ```
-src/app/
-├── (landing)/              # Marketing pages with navbar/footer
-│   ├── layout.tsx          # Landing-specific layout
-│   ├── page.tsx           # Home page
-│   └── about/             # About page
-├── (dashboard)/            # Application dashboard
-│   ├── layout.tsx          # Dashboard layout with sidebar
-│   ├── dashboard/          # Main dashboard page
-│   │   └── page.tsx       # Dashboard with calendar
-│   └── calendar/          # Dedicated calendar page
-│       └── page.tsx       # Same calendar functionality
-└── layout.tsx             # Root layout (fonts, globals)
+Root layout (app/layout.tsx)
+├── ReduxProvider + QueryProvider + AuthInitializer + fonts (Plus Jakarta Sans, Space Grotesk)
+│
+├── (landing)/ layout → Navbar + Footer
+│   └── /                         Landing: Hero · About · Architecture · CTA
+│
+├── (dashboard)/dashboard/ layout → OnboardingGuard + SidebarProvider + AppSidebar + dashboard <Toaster>
+│   ├── /dashboard/calendar       WeeklyCalendar (Google Calendar events, fallback sample events)
+│   ├── /dashboard/periods        Period list (usePeriods) — create/edit/delete dialogs
+│   ├── /dashboard/periods/[id]   Period detail (usePeriodDetail) — activities grouped Mon→Sun
+│   └── /dashboard/tasks          Execution Queue task list (tasksService)
+│
+├── /onboarding  (own minimal dark layout + own Toaster) → OnboardingWizard (3 steps)
+├── /signup       Google OAuth entry ("Continue with Google" → :8000/auth/google)
+├── /auth/callback  Parses user from URL → checks onboarding → routes to /onboarding or /dashboard/calendar
+└── /test         Dev page: prints logged-in user name from Redux
 ```
 
-### Component Architecture
-```
-src/components/
-├── ui/                     # shadcn/ui base components
-│   ├── button.tsx          # Custom button variants
-│   ├── calendar.tsx        # Original shadcn calendar (unused)
-│   ├── dialog.tsx          # Modal dialogs
-│   ├── input.tsx           # Form inputs
-│   └── sidebar.tsx         # Dashboard sidebar
-├── shared/                 # Reusable custom components
-│   ├── Button.tsx          # Enhanced button component
-│   ├── Footer.tsx          # Landing page footer
-│   ├── Logo.tsx            # Brand logo component
-│   └── Navigation.tsx      # Landing page navbar
-├── landing/                # Landing page specific components
-│   └── HeroSection.tsx     # Hero banner component
-└── calendar/               # Complete calendar system
-    ├── Calendar.tsx        # Main calendar container
-    ├── components/         # Calendar sub-components
-    ├── hooks/             # Calendar-specific hooks
-    ├── types/             # TypeScript definitions
-    ├── utils/             # Calendar utility functions
-    └── index.ts           # Main exports
-```
-
-## Calendar System Architecture
-
-### Component Hierarchy
-```
-Calendar.tsx (Main Container)
-├── CalendarToolbar.tsx (Navigation & View Controls)
-├── CalendarGrid.tsx (React Big Calendar Integration)
-│   ├── CalendarEvent.tsx (Individual event rendering)
-│   └── CalendarDayHeader.tsx (Day/date headers)
-├── EventModal.tsx (Event Management Dialog)
-│   └── EventForm.tsx (Event creation/editing form)
-├── DeleteConfirmationDialog.tsx (Deletion workflow)
-└── FloatingChatButton.tsx (UI enhancement)
-```
-
-### State Management (Zustand)
-```typescript
-// Central store: src/stores/calendarStore.ts
-interface CalendarStore {
-  // Calendar State
-  currentDate: Date
-  view: CalendarView
-  events: CalendarEvent[]
-  
-  // UI State
-  isEventModalOpen: boolean
-  isCreateMode: boolean
-  selectedEventId: string | null
-  selectedSlot: { start: Date; end: Date } | null
-  isLoading: boolean
-  error: string | null
-  
-  // Actions (35+ methods)
-  createEvent: (event) => Promise<void>
-  updateEvent: (id, updates) => Promise<void>
-  deleteEvent: (id) => Promise<void>
-  moveEvent: (id, start, end) => Promise<void>
-  // ... navigation, UI, and utility methods
-}
-```
-
-### Event CRUD Operations
-- **Create**: Click empty calendar slots → EventModal with EventForm
-- **Read**: Events display with custom CalendarEvent components
-- **Update**: Click existing events → EventModal pre-filled with data
-- **Delete**: Delete button in edit form + confirmation dialog + keyboard shortcuts
-
-### React Big Calendar Integration
-```typescript
-// CalendarGrid.tsx - Core integration
-<DragAndDropCalendar
-  localizer={momentLocalizer(moment)}
-  events={events}
-  view={view}
-  selectable={true}
-  draggableAccessor={() => true}
-  resizable={true}
-  onSelectSlot={handleSlotSelect}      // Create events
-  onSelectEvent={handleEventSelect}    // Edit events
-  onEventDrop={handleEventDrop}        // Drag & drop
-  onEventResize={handleEventResize}    // Resize events
-  components={{
-    event: CalendarEventComponent,     // Custom event rendering
-    toolbar: () => null,              // Custom toolbar used
-  }}
-/>
-```
-
-## Current Implementation Status
-
-### ✅ Completed Features
-
-#### Interactive Calendar System
-- **Full Event Management**: Create, edit, delete events with confirmation
-- **Drag & Drop**: Move events between dates and times
-- **Event Resizing**: Change event duration by dragging edges
-- **Multiple Views**: Day, week, work week, month views with custom navigation
-- **Responsive Design**: Mobile-optimized with touch-friendly interactions
-
-#### State Management
-- **Zustand Store**: Centralized state with specialized hooks
-- **Optimistic Updates**: Immediate UI feedback with error recovery
-- **Loading States**: Visual feedback during async operations
-- **Error Handling**: User-friendly error messages and recovery
-
-#### User Interface
-- **Modal System**: EventModal, EventForm, DeleteConfirmationDialog
-- **Form Handling**: Date/time inputs, event type selection, descriptions
-- **Accessibility**: Dialog descriptions, keyboard navigation
-- **Styling**: Custom CSS with Tailwind, glassmorphism effects
-
-#### Developer Experience
-- **TypeScript**: Comprehensive type coverage with strict configuration
-- **Component Architecture**: Modular, reusable, well-documented components
-- **Performance**: React.memo, useCallback optimizations
-- **Code Quality**: ESLint compliant, no TypeScript errors
-
-### 🚧 Ready for Integration
-
-#### Backend API Points
-```typescript
-// Store methods ready for API integration
-interface CalendarAPI {
-  GET '/api/events' → CalendarEvent[]
-  POST '/api/events' → CalendarEvent
-  PUT '/api/events/:id' → CalendarEvent
-  DELETE '/api/events/:id' → { success: boolean }
-  PATCH '/api/events/:id/move' → CalendarEvent
-}
-```
-
-#### Database Schema Ready
-```sql
--- Recommended table structure
-CREATE TABLE events (
-  id UUID PRIMARY KEY,
-  title VARCHAR(255) NOT NULL,
-  description TEXT,
-  start_date TIMESTAMP NOT NULL,
-  end_date TIMESTAMP NOT NULL,
-  event_type VARCHAR(50) NOT NULL,
-  user_id UUID REFERENCES users(id),
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
-);
-```
-
-## Development Workflow
-
-### Package Management
-- **Manager**: PNPM exclusively (faster, more efficient)
-- **Lock File**: `pnpm-lock.yaml` committed to repository
-- **Installation**: `pnpm install` (not npm install)
-
-### Development Commands
-```bash
-# Development
-pnpm dev          # Start development server (http://localhost:3000)
-
-# Building
-pnpm build        # Production build
-pnpm start        # Start production server
-
-# Code Quality
-pnpm lint         # ESLint checks
-npx tsc --noEmit  # TypeScript type checking
-```
-
-### File Structure Conventions
-- **Absolute Imports**: `@/*` maps to `./src/*`
-- **Component Naming**: PascalCase for components, camelCase for utilities
-- **File Naming**: kebab-case for pages, PascalCase for components
-- **Type Definitions**: Separate `.types.ts` files for complex interfaces
-
-### Styling Approach
-- **Tailwind CSS 4**: Latest version with `@theme inline` syntax
-- **CSS Variables**: Custom properties in `globals.css`
-- **Component Styles**: Co-located CSS files when needed
-- **Responsive Design**: Mobile-first with `sm:`, `md:`, `lg:`, `xl:` breakpoints
-
-## Current Routes & Pages
-
-### Public Routes (Landing Group)
-- **`/`** - Home page with hero section and navigation
-- **`/about`** - About page (if implemented)
-
-### Authenticated Routes (Dashboard Group)
-- **`/dashboard`** - Main dashboard with interactive calendar
-- **`/calendar`** - Dedicated calendar page (same functionality)
-
-### Layout Hierarchy
-```
-Root Layout (fonts, globals)
-├── Landing Layout (navbar, footer)
-│   └── Landing pages
-└── Dashboard Layout (sidebar navigation)
-    └── Dashboard pages (calendar functionality)
-```
-
-## Future Refactoring Roadmap
-
-### Phase 1: Backend Integration (Immediate)
-**Timeline**: 1-2 weeks  
-**Priority**: HIGH
-
-#### API Integration Tasks
-- Replace simulated async calls with real API endpoints
-- Implement proper error handling for network failures
-- Add authentication middleware for calendar access
-- Set up database schema for events and users
-
-#### Files to Modify
-- `src/stores/calendarStore.ts` - Replace mock functions with API calls
-- Add `src/lib/api.ts` - API client configuration
-- Add `src/hooks/useAuth.ts` - Authentication management
-
-### Phase 2: Real-time Features (Next)
-**Timeline**: 2-3 weeks  
-**Priority**: MEDIUM
-
-#### Collaborative Features
-- WebSocket integration for real-time calendar updates
-- Multi-user event editing with conflict resolution
-- Live cursor tracking during event creation
-- Push notifications for event updates
-
-#### Technical Implementation
-- WebSocket connection management
-- Event conflict resolution algorithms
-- Real-time state synchronization patterns
-
-### Phase 3: Architecture Improvements
-**Timeline**: 1-2 weeks  
-**Priority**: MEDIUM
-
-#### Code Quality Enhancements
-- Split large `calendarStore.ts` into focused stores
-- Implement comprehensive test suite (Jest + React Testing Library)
-- Add error boundaries for production reliability
-- Performance monitoring and optimization
-
-#### Developer Experience
-- Storybook for component documentation
-- E2E testing with Playwright
-- CI/CD pipeline for automated testing and deployment
-
-### Phase 4: Feature Expansion
-**Timeline**: 3-4 weeks  
-**Priority**: LOW
-
-#### Advanced Calendar Features
-- Recurring event patterns (daily, weekly, monthly)
-- Event categories and filtering system
-- Calendar import/export (iCalendar format)
-- Event search and advanced filtering
-- Event templates for quick creation
-
-#### AI-Powered Features
-- Smart event scheduling suggestions
-- Automatic conflict detection and resolution
-- Natural language event creation
-- Meeting analytics and insights
-
-## Critical Files for Next Session
-
-### Core Calendar Implementation
-- `src/stores/calendarStore.ts` - Central state management (356 lines)
-- `src/components/calendar/Calendar.tsx` - Main calendar container
-- `src/components/calendar/components/CalendarGrid.tsx` - BigCalendar integration
-- `src/components/calendar/types/calendar.types.ts` - Type definitions
-
-### Backend Integration Points
-- `src/app/(dashboard)/dashboard/page.tsx` - Dashboard route
-- `src/app/(dashboard)/calendar/page.tsx` - Calendar route  
-- `src/components/calendar/components/EventForm.tsx` - Form handling
-
-### Configuration Files
-- `package.json` - Dependencies and scripts
-- `CLAUDE.md` - Project guidelines and patterns
-- `tsconfig.json` - TypeScript configuration
-
-## Authentication Implementation Status
-
-### ✅ PHASE 1 COMPLETED (2026-04-20)
-**Duration**: 1 session with Frontend Agent  
-**Status**: Ready for Phase 2
-
-#### What Was Implemented
-1. **API Service Layer** (`src/lib/api.ts`)
-   - Base fetch wrapper with error handling
-   - JWT token management using httpOnly cookies
-   - Automatic token refresh on 401 errors
-   - Request/response interceptors
-   - TypeScript interfaces for all API responses
-   - Integration with backend endpoints (login, logout, register, Google OAuth)
-
-2. **Authentication Hook** (`src/hooks/useAuth.ts`)
-   - Complete auth state management with loading/error states
-   - Login methods (email/password and Google OAuth)
-   - User registration functionality
-   - Logout with proper state clearing
-   - Token validation and auth status checking
-   - Integration with both Zustand store and API service
-
-3. **Enhanced Authentication Store** (`src/stores/authStore.ts`)
-   - Expanded existing store with full auth capabilities
-   - Session-based persistence using sessionStorage
-   - Loading and error state management
-   - Backward compatibility with existing calendar system
-   - Multiple access patterns (state-only, actions-only, complete)
-
-#### Key Features Implemented
-- ✅ httpOnly cookie security (no localStorage token exposure)
-- ✅ Automatic token refresh with retry logic
-- ✅ Comprehensive error handling throughout
-- ✅ TypeScript type safety across all auth components
-- ✅ Integration with existing Zustand patterns
-- ✅ Session-based persistence (clears on browser close)
-
-### 🚧 NEXT: PHASE 2 - Authentication UI Components
-
-#### Required Implementation (Next Developer Session)
-1. **Authentication UI Components**
-   - `src/components/auth/LoginButton.tsx` - Google OAuth login
-   - `src/components/auth/LogoutButton.tsx` - Logout functionality  
-   - `src/components/auth/UserProfile.tsx` - User profile display
-
-2. **OAuth Callback Handler**
-   - `src/app/auth/callback/page.tsx` - Handle Google OAuth callback
-   - Extract tokens and integrate with auth system
-   - Proper redirect logic and error handling
-
-#### Implementation Instructions for Next Developer
-```bash
-# 1. Create auth components directory
-mkdir -p src/components/auth
-mkdir -p src/app/auth/callback
-
-# 2. Use existing project patterns:
-# - Import useAuth from '@/hooks/useAuth' 
-# - Follow existing Button component styling patterns
-# - Use Tailwind CSS 4 with project's custom classes
-# - Use Lucide React for icons
-# - Follow Next.js 16.2.2 App Router patterns
-
-# 3. Integration points:
-# - LoginButton should call useAuth().loginWithGoogle()
-# - LogoutButton should call useAuth().logout()  
-# - UserProfile should use useAuthState() for user data
-# - OAuth callback should process auth flow completion
-```
-
-### 🔄 Phase 2 Component Specifications
-
-#### LoginButton.tsx Requirements
-- Google OAuth integration using `useAuth().loginWithGoogle()`
-- Loading spinner during authentication process
-- Error handling with user feedback
-- Consistent styling with project Button component
-- Proper TypeScript typing
-
-#### LogoutButton.tsx Requirements  
-- Clean logout using `useAuth().logout()`
-- Loading state during logout process
-- Optional confirmation dialog
-- Proper state clearing and redirect handling
-
-#### UserProfile.tsx Requirements
-- Display user info (name, email, avatar) from `useAuthState()`
-- Handle loading states while fetching user data
-- Graceful handling of missing user information
-- Responsive design for dropdown or inline display
-
-#### OAuth Callback Handler Requirements
-- Process Google OAuth callback in Next.js App Router
-- Extract auth tokens/data from URL parameters
-- Integrate with useAuth hook for state management
-- Redirect logic (dashboard on success, login on failure)
-- Comprehensive error handling for failed auth
-
-### 📋 Remaining Implementation Phases (After Phase 2)
-
-#### Phase 3: Route Protection (1 day)
-- `src/components/auth/ProtectedRoute.tsx` - Route protection HOC
-- Update `src/app/(dashboard)/layout.tsx` with auth checking
-- Update `src/components/shared/Navigation.tsx` with login/logout UI
-
-#### Phase 4: Calendar Backend Integration (2-3 days)  
-- Update `src/stores/calendarStore.ts` with real API calls
-- Create `src/lib/calendarApi.ts` for calendar-specific endpoints
-- Add loading states and error handling to calendar components
-
-#### Phase 5: Error Handling & UX Polish (1 day)
-- `src/components/ui/ErrorBoundary.tsx` for global error handling
-- `src/components/ui/Toast.tsx` for user notifications  
-- Enhanced loading states throughout application
-
-#### Phase 6: Testing & Production Ready (1-2 days)
-- Integration testing of complete auth flow
-- Code review and optimization
-- Production deployment preparation
-
-### 🔄 Backend Integration Points
-
-#### Available Backend Endpoints (localhost:8000)
-- **Authentication**: `GET /auth/google`, `POST /auth/refresh`, `POST /auth/logout`
-- **Calendar API**: `GET /calendar/events`, `POST /calendar/events`, etc.
-- **Health Check**: `GET /health`
-
-#### Ready Integration Features
-- ✅ JWT token management with httpOnly cookies
-- ✅ Automatic token refresh mechanism
-- ✅ Error handling for API failures
-- ✅ User state management with Zustand
-- ✅ TypeScript interfaces for backend data structures
-
-## How to Continue Development
-
-### Immediate Next Steps
-1. **Implement Phase 2 Components** using the specifications above
-2. **Test Authentication Flow** with your backend at localhost:8000
-3. **Integrate into Existing Navigation** by adding LoginButton to landing page
-4. **Add User Profile** to dashboard sidebar/header
-
-### Development Commands
-```bash
-# Start frontend development
-cd /Users/federal/Desktop/notebooklm/frontend
-pnpm dev
-
-# Start backend (in separate terminal) 
-cd /Users/federal/Desktop/notebooklm
-# [your backend start command]
-
-# Type checking
-pnpm typecheck
-
-# Testing integration
-# Open http://localhost:3000 and test auth flow
-```
-
-### Key Files Created (Phase 1)
-- `src/lib/api.ts` - Complete API service layer ✅
-- `src/hooks/useAuth.ts` - Authentication React hook ✅  
-- `src/stores/authStore.ts` - Enhanced Zustand auth store ✅
-
-### Files to Create (Phase 2)
-- `src/components/auth/LoginButton.tsx` - Login UI component
-- `src/components/auth/LogoutButton.tsx` - Logout UI component
-- `src/components/auth/UserProfile.tsx` - User profile display
-- `src/app/auth/callback/page.tsx` - OAuth callback handler
-
-The authentication foundation is solid and ready for UI implementation!
+**Auth/onboarding flow:** `/signup` → backend OAuth → `/auth/callback` (stores user in Redux, decides onboarding) → `/onboarding` (first-time) or `/dashboard/calendar`. `OnboardingGuard` (in dashboard layout) redirects to `/onboarding` when `user.onboardingCompletedAt` is null.
+
+## State Management
+
+### Redux Toolkit — `src/stores/`
+Store (`stores/index.ts`) registers two reducers; serialization checks are disabled for the calendar paths that intentionally hold raw `Date` objects.
+
+- **`authSlice.ts`** — `{ user, isAuthenticated, isLoading, isInitialized }`. Actions: `setUser`, `setIsAuthenticated`, `logout`. Thunks: `checkAuth()` (GET `/auth/user`), `syncDeviceTimezone()` (PATCH `/me/timezone`).
+- **`calendarSlice.ts`** (types in `stores/calendar/calendarSlice.types.ts`) — `{ currentDate, view, selectedCalendarId, isEventModalOpen, selectedEventId, selectedSlot, isLoading, error }`. Actions: `setCurrentDate`, `setView`, `setSelectedCalendar`, `navigateCalendar`, `openCreateModal`, `openEditModal`, `closeModal`, `selectEvent`, `setLoading`, `setError`, `clearError`.
+- **`stores/calendar/`** composite hooks (barrel `calendarHooks.ts`): `useCalendarState`, `useCalendarUIState`, `useCalendarActions`, `useCalendarNavigation`, `useEventManagement` (Redux UI + RQ mutations), `useCalendarWithEvents`.
+- **`stores/hooks.ts`** — typed `useAppDispatch` / `useAppSelector`.
+
+### TanStack Query — server cache
+- Provider `components/providers/QueryProvider.tsx`: 5min stale, 10min gc, retry except 401/403, exponential backoff.
+- **Query key factory** `hooks/calendar/google/queryKeys.ts` (`googleCalendarQueryKeys`): `calendars()`, `events()`, `eventsForCalendar(params)`, `sync(options)`.
+- Other keys: `['periods']`, `['period', id]`, `['period', id, 'activities']`, tasks via `useQuery`.
+
+## API & Services
+
+- **`api/axios.ts`** — base `NEXT_PUBLIC_API_BASE_URL || http://localhost:8000`, `withCredentials: true` (httpOnly cookies). Response interceptor: on 401, dedups a single `POST /auth/refresh` (via shared `refreshPromise`) and retries; on refresh failure rejects (no silent logout).
+- **`services/calendar/`** (barrel `calendar.service.ts`) — `calendars.ts` (GET `/calendar/calendars`), `events.ts` (GET `/calendar/events`), `mutations.ts` (POST/PUT/DELETE `/calendar/events`), `sync.ts` (multi-calendar fetch), `errors.ts` (typed `CalendarServiceError`), `factory.ts` (`calendarService` singleton).
+- **`services/periods.service.ts`** — `getPeriods`, `getPeriodById`, `createPeriod`, `updatePeriod` (PATCH), `deletePeriod`.
+- **`services/activities.service.ts`** — CRUD under `/periods/{pid}/activities`; create/update/delete return `sync` envelopes (`created`/`updated`/`deleted`/`skipped`/`errors[]`); delete normalized to `DeleteActivityResult = ok | partial`.
+- **`services/tasks.service.ts`** — `tasksService`: GET `/tasks`, GET `/tasks/{id}`, PATCH `/tasks/{id}/done`.
+- **`services/onboarding.service.ts`** — POST `/me/onboarding/complete` (idempotent).
+
+## Custom Hooks (`src/hooks/`)
+
+- **auth/** — `useLogout` (POST `/auth/logout` best-effort → Redux `logout` → `/signup`).
+- **periods/** — `usePeriods` (list + create/update/delete + dialog state), `usePeriodDetail` (period + activities grouped by weekday + activity mutations + sync toasts), `useCrudDialogs<T>` (generic dialog state machine).
+- **calendar/google/** — queries (`useGoogleCalendars`, `useGoogleCalendarEvents`, `useRawGoogleCalendarEvents`, `useGoogleCalendarSync`), mutations (`useCreate/Update/DeleteGoogleCalendarEvent`), cache utils (invalidate/prefetch).
+- **calendar/calendar-with-google/** — `useCalendarWithGoogle` (events + calendars, sample fallback), `useCalendarStatusSync` (mirrors RQ loading/error into Redux).
+- **calendar/event-generation/** — `useEventGeneration` (memoized sample fallback events).
+- **use-mobile.ts** — `useIsMobile` (<768px).
+
+## Component Map (`src/components/`)
+
+- **account/** — `SidebarUserButton`, `AccountDialog`, `LogoutConfirmDialog`, `UserAvatar`.
+- **activities/** — `RecurringActivityCard` + `recurring-activity-card/` parts; `RecurringActivityFormDialog` + `recurring-activity-form/` (fields, day picker, time fields, `useRecurringActivityForm`, utils/constants/types).
+- **calendar/** — thin re-export shims (`Calendar`, `CalendarGrid`, `CalendarToolbar`, `EventForm`, `DeleteConfirmationDialog`) over SOLID subfolders `calendar-main/`, `calendar-grid/`, `calendar-toolbar/`, `event-form/`, `delete-dialog/`; plus `EventModal`, `GoogleCalendarProvider`, `CalendarEvent`, `CalendarDayHeader`, `FloatingChatButton`.
+- **landing/** — `HeroSection`, `AboutSection` (+ `about/` parts), `ArchitectureSection`, `CTASection`.
+- **onboarding/** — `OnboardingWizard`, `OnboardingGuard`, `WizardChrome`, `WizardSteps`, `StepIndicator`, `useOnboardingNavigation`; `steps/` (Welcome/Period/Activity + shared header/actions/error) with `period-step/` and `activity-step/` form subfolders.
+- **periods/** — `PeriodCard`, `PeriodCardActions`, `PeriodFormDialog` (+ `period-form/` parts), `ConfirmDeleteDialog`, `ConfirmDeleteFooter`, `QueryErrorRetry`.
+- **providers/** — `ReduxProvider`, `QueryProvider`.
+- **shared/** — `Logo`, `Button`, `CardWrapper`, `Footer`, `SecondaryText`, `BreakThorugh` [sic], `Loader` (→ `loader-parts/`), `icons/`.
+- **tasks/** — `TaskCard`, `TaskList`, `TaskDetailDialog` (+ `task-detail/` sections: description, badges, steps, resources, success criteria, done button).
+- **ui/** — shadcn primitives: button, dialog, select, input, textarea, label, tooltip, sheet, separator, skeleton, sidebar, `app-sidebar`.
+- Root: `Navigation.tsx` (landing navbar), `AuthInitializer.tsx` (boots `checkAuth` + timezone sync).
+
+## Types & Utils
+
+- **types/** — `activity.ts` (`ScheduleEntry`, `RecurringActivity`, `Create/UpdateActivityInput`, `DAYS_OF_WEEK*`, `WEEK_DISPLAY_ORDER`), `period.ts`, `task.ts`, `User.ts`, `calendar/` (event/props/state/store), `google-calendar/` (event/calendar-list/datetime/event-details/errors/sync).
+- **utils/** — `activity-sync-toast`, `api-error`, `auth` (`parseUserFromUrl`), `cn`, `date-input`, `period-dates`; `calendar/` decomposed into `dates/`, `formats/`, `styles/` (incl. `google-event-colors` colorId→hex, `hex-to-rgba`), `transform/` (Google ↔ internal event mapping, SSR-safe description sanitize, validation guards).
+- **styles/calendar.css** — dark-theme react-big-calendar overrides.
+
+## SOLID Refactor
+
+`SOLID_REFACTOR_PROGRESS.md` records all 13 domains complete (branch `refactor/frontend-solid-architecture`). Known remaining >100-line files (non-critical): `utils/calendar/calendar-transform.utils.ts` (~381), `services/calendar.service.ts` barrel (~297), `types/google-calendar.types.ts` (~290), `components/calendar/EventForm.tsx` (~298), `components/calendar/CalendarGrid.tsx` (~226).
+
+## Conventions (from frontend/CLAUDE.md)
+
+- Import `cn` from `@/utils/cn` (not `@/lib/utils`). Path alias `@/*` → `./src/*`.
+- shadcn primitives in `components/ui/`, custom reusables in `components/shared/`.
+- Prefer CSS variables / theme tokens over hardcoded hex; glassmorphism `bg-[#ffffff]/2 backdrop-blur-sm`; brand green `--green-nice: #008f4c`.
+- TypeScript interfaces for all props; SOLID modules kept <100 lines.
+
+## Backend Endpoints In Use (localhost:8000)
+
+`GET /auth/user` · `POST /auth/refresh` · `POST /auth/logout` · `GET /auth/google` (OAuth start) · `PATCH /me/timezone` · `POST /me/onboarding/complete` · `GET/POST/PATCH/DELETE /periods[/:id]` · `GET/POST/PATCH/DELETE /periods/:pid/activities[/:id]` · `GET /tasks`, `GET /tasks/:id`, `PATCH /tasks/:id/done` · `GET /calendar/calendars` · `GET/POST/PUT/DELETE /calendar/events[/:id]`.
+</content>
