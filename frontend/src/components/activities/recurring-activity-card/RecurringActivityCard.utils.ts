@@ -14,9 +14,10 @@ export function sortScheduleForDisplay(
 
 /**
  * Collapse to a single line when every entry shares identical times; this is
- * the common case (e.g. "Mon, Wed, Fri · 06:00–08:00").
+ * the common case (e.g. "Mon, Wed, Fri · 06:00–08:00"). Returns `false` for an
+ * empty array so callers never collapse a schedule with nothing to show.
  */
-export function allEntriesShareTimes(entries: ScheduleEntry[]): boolean {
+export function entriesShareTimes(entries: ScheduleEntry[]): boolean {
   return (
     entries.length > 0 &&
     entries.every(

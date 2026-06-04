@@ -6,7 +6,7 @@ import {
 } from '@/types/activity'
 import { DEFAULT_END, DEFAULT_START } from './RecurringActivityForm.constants'
 import {
-  allEntriesShareTimes,
+  entriesShareTimesOrEmpty,
   setAllEntryTimes,
   setEntryTime,
   sortEntriesByDisplayOrder,
@@ -43,7 +43,8 @@ export function useRecurringActivityForm({
   // only true when every existing entry shares identical start+end.
   const [sameTimeForAll, setSameTimeForAll] = useState<boolean>(() => {
     if (!initialActivity || initialActivity.schedule.length === 0) return true
-    return allEntriesShareTimes(initialActivity.schedule)
+    // Empty schedule is already handled above; helper returns `true` for [].
+    return entriesShareTimesOrEmpty(initialActivity.schedule)
   })
 
   const [validationError, setValidationError] = useState<string | null>(null)

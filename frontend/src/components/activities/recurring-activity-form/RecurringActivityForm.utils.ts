@@ -5,8 +5,11 @@ import {
 } from '@/types/activity'
 import { DEFAULT_END, DEFAULT_START } from './RecurringActivityForm.constants'
 
-/** True when every entry shares identical start + end times. */
-export function allEntriesShareTimes(entries: ScheduleEntry[]): boolean {
+/**
+ * True when every entry shares identical start + end times. Returns `true` for
+ * an empty array so a fresh form defaults to the "same time for all" path.
+ */
+export function entriesShareTimesOrEmpty(entries: ScheduleEntry[]): boolean {
   if (entries.length === 0) return true
   const first = entries[0]
   return entries.every(

@@ -6,7 +6,7 @@ import { cn } from '@/utils/cn'
 import { CardActions } from './recurring-activity-card/CardActions'
 import { CardSchedule } from './recurring-activity-card/CardSchedule'
 import {
-  allEntriesShareTimes,
+  entriesShareTimes,
   sortScheduleForDisplay,
 } from './recurring-activity-card/RecurringActivityCard.utils'
 
@@ -57,10 +57,12 @@ function RecurringActivityCardImpl({
         <h4 className="font-space-grotesk text-base font-semibold leading-tight text-text-primary line-clamp-2">
           {activity.title}
         </h4>
+        {/* entriesShareTimes returns `false` for an empty schedule, so the
+            shared-time block is skipped when there is nothing to collapse. */}
         <CardSchedule
           sortedEntries={sortedEntries}
           contextEntry={contextEntry}
-          allSameTimes={allEntriesShareTimes(sortedEntries)}
+          allSameTimes={entriesShareTimes(sortedEntries)}
         />
       </div>
 

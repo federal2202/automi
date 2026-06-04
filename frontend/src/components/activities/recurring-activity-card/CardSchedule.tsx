@@ -23,7 +23,9 @@ export function CardSchedule({
     )
   }
 
-  if (allSameTimes) {
+  // Guard the [0] access: real activities always have ≥1 entry, but this keeps
+  // the shared-time block from throwing if ever called with an empty schedule.
+  if (allSameTimes && sortedEntries.length > 0) {
     return (
       <p className="font-jakarta text-xs tracking-[0.5px] text-text-muted">
         {sortedEntries.map((e) => DAYS_OF_WEEK[e.dayOfWeek]).join(', ')}
