@@ -6,6 +6,8 @@ import { GoogleCalendarItem, GoogleEventsResponse } from '@/types/google-calenda
 import { CalendarEvent } from '@/types/calendar/calendar.types'
 import { isValidGoogleEvent } from './validation'
 import { parseGoogleDateTime, determineEventType } from './parsing'
+import { sanitizeDescription } from './sanitize-description'
+import { googleColorIdToHex } from '../styles/google-event-colors'
 
 /**
  * Transforms a Google Calendar event to internal CalendarEvent format
@@ -32,7 +34,8 @@ export const transformGoogleEventToCalendarEvent = (
       start,
       end,
       type,
-      description: googleEvent.description || undefined,
+      description: sanitizeDescription(googleEvent.description),
+      color: googleColorIdToHex(googleEvent.colorId),
     }
   } catch (error) {
     throw new Error(

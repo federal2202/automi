@@ -1,8 +1,6 @@
 "use client"
 
-import { Button } from '@/components/ui/button'
 import { cn } from '@/utils/cn'
-import { Loader } from '@/components/shared/Loader'
 
 interface EventFormActionsProps {
   mode: 'create' | 'edit'
@@ -12,7 +10,8 @@ interface EventFormActionsProps {
 }
 
 /**
- * EventFormActions — footer with delete / cancel / submit buttons.
+ * EventFormActions — footer with delete / cancel / submit buttons,
+ * styled to match the period delete modal (ConfirmDeleteFooter).
  */
 export function EventFormActions({
   mode,
@@ -21,33 +20,52 @@ export function EventFormActions({
   onDelete,
 }: EventFormActionsProps) {
   return (
-    <div className="flex justify-between pt-6 border-t border-[#ffffff]/10">
+    <div className="flex justify-between pt-6 border-t border-white/10">
       {mode === 'edit' && (
-        <Button
+        <button
           type="button"
-          variant="gradient-destructive"
-          size="lg"
           onClick={onDelete}
           disabled={isLoading}
+          className={cn(
+            'rounded-lg border border-red-500/40 bg-red-500/15 px-4 py-2 text-sm font-bold text-red-200',
+            'hover:bg-red-500/25 transition-colors',
+            'font-space-grotesk uppercase tracking-wide',
+            isLoading && 'opacity-60 cursor-not-allowed'
+          )}
         >
           Delete
-        </Button>
+        </button>
       )}
-      <div className={cn('flex space-x-2', mode === 'create' && 'ml-auto')}>
-        <Button
+      <div className={cn('flex gap-2', mode === 'create' && 'ml-auto')}>
+        <button
           type="button"
-          variant="ghost"
-          size="lg"
           onClick={onCancel}
           disabled={isLoading}
-          className="text-[#ffffff]/70 hover:text-white hover:bg-white/5"
+          className={cn(
+            'rounded-lg border border-white/15 bg-white/5 px-4 py-2 text-sm font-medium text-white/80',
+            'hover:bg-white/10 transition-colors',
+            'font-space-grotesk uppercase tracking-wide',
+            isLoading && 'opacity-50 cursor-not-allowed'
+          )}
         >
           Cancel
-        </Button>
-        <Button type="submit" variant="gradient" size="lg" disabled={isLoading}>
+        </button>
+        <button
+          type="submit"
+          disabled={isLoading}
+          className={cn(
+            'rounded-lg border border-green-nice/40 bg-green-nice/15 px-4 py-2 text-sm font-bold text-green-200',
+            'hover:bg-green-nice/25 transition-colors',
+            'font-space-grotesk uppercase tracking-wide',
+            isLoading && 'opacity-60 cursor-not-allowed'
+          )}
+        >
           {isLoading ? (
             <span className="inline-flex items-center gap-2">
-              <Loader size="sm" hideOrbit />
+              <span
+                aria-hidden
+                className="inline-block h-3.5 w-3.5 rounded-full border-2 border-green-200/40 border-t-green-200 animate-spin"
+              />
               Saving...
             </span>
           ) : mode === 'create' ? (
@@ -55,7 +73,7 @@ export function EventFormActions({
           ) : (
             'Update Event'
           )}
-        </Button>
+        </button>
       </div>
     </div>
   )

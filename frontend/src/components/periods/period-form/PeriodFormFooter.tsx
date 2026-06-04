@@ -34,8 +34,8 @@ export function PeriodFormFooter({
         type="submit"
         disabled={isSubmitting}
         className={cn(
-          'rounded-lg bg-green-nice px-4 py-2 text-sm font-bold text-white',
-          'hover:bg-green-nice/90 transition-colors',
+          'rounded-lg bg-green-dark px-4 py-2 text-sm font-bold text-white',
+          'hover:bg-green-dark/90 transition-colors',
           'font-space-grotesk uppercase tracking-wide',
           isSubmitting && 'opacity-60 cursor-not-allowed'
         )}

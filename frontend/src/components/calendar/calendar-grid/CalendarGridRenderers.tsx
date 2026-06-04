@@ -3,6 +3,7 @@
 import moment from 'moment'
 import { cn } from '@/utils/cn'
 import { CalendarEvent } from '@/types/calendar/calendar.types'
+import { safeEventColor } from '@/utils/calendar/styles/hex-to-rgba'
 
 /**
  * Month view date header — minimalistic, top-left, today in brand green.
@@ -29,7 +30,12 @@ export const MonthDateHeader = ({ date }: { date: Date }) => {
  * Month-view event renderer — just the title; chip styling lives on .rbc-event.
  */
 export const MonthEvent = ({ event }: { event: CalendarEvent }) => (
-  <span className="block truncate text-[11px] font-medium leading-tight">
-    {event.title}
+  <span className="flex items-center gap-1.5 min-w-0 text-[11px] font-medium leading-tight">
+    <span
+      aria-hidden
+      className="shrink-0 w-1.5 h-1.5 rounded-full"
+      style={{ backgroundColor: safeEventColor(event.color) }}
+    />
+    <span className="truncate">{event.title}</span>
   </span>
 )

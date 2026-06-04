@@ -1,10 +1,11 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import Logo from "../shared/Logo"
 import { cn } from "@/utils/cn"
 import { useAppSelector } from "@/stores/hooks"
+import { useCalendarActions } from "@/stores/calendar/useCalendarActions"
 import {
   Sidebar,
   SidebarContent,
@@ -32,6 +33,18 @@ export default function AppSidebar() {
   const isAuthenticated = useAppSelector((s) => s.auth.isAuthenticated)
   const collapsed = state === "collapsed"
   const pathname = usePathname()
+  const router = useRouter()
+  const { openCreateModal } = useCalendarActions()
+
+  // Open the create-event modal with a default 1-hour slot starting now, then
+  // route to the calendar where <EventModal /> lives (it reads modal state from
+  // the store, so it opens as soon as the page mounts).
+  const handleNewEvent = () => {
+    const start = new Date()
+    const end = new Date(start.getTime() + 60 * 60 * 1000)
+    openCreateModal({ start, end })
+    router.push("/dashboard/calendar")
+  }
 
   const navigationItems = [
     {
@@ -114,12 +127,13 @@ export default function AppSidebar() {
       >
         <button
           aria-label="New event"
+          onClick={handleNewEvent}
           className={cn(
-            "font-space-grotesk font-bold flex items-center justify-center",
-            "bg-green-nice text-white text-sm shadow-sm",
-            "hover:bg-green-nice/90 active:scale-[0.98]",
+            "font-space-grotesk font-bold uppercase tracking-wide flex items-center justify-center",
+            "rounded-lg border border-green-nice/40 bg-green-nice/15 text-sm text-green-200",
+            "hover:bg-green-nice/25 active:scale-[0.98]",
             "transition-all duration-200",
-            "h-10 w-full rounded-lg gap-2 px-4 whitespace-nowrap overflow-hidden",
+            "h-10 w-full gap-2 px-4 whitespace-nowrap overflow-hidden",
             "group-data-[collapsible=icon]:w-9 group-data-[collapsible=icon]:h-9",
             "group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:rounded-lg"
           )}

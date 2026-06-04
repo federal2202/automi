@@ -103,11 +103,16 @@
 /* Selected event - NO BORDERS */
 .automi-calendar .rbc-event.rbc-selected {
   background: transparent !important;
-  outline: 2px solid #059669 !important;
+  outline: 2px solid rgba(255, 255, 255, 0.55) !important;
   outline-offset: 2px;
   border-radius: 16px !important;
   border: none !important;
   border-left: none !important;
+}
+
+/* Hover: intensify the per-event tint exposed via --event-fill-hover. */
+.automi-calendar .rbc-event:hover .calendar-event-card {
+  background-color: var(--event-fill-hover) !important;
 }
 
 /* Time grid lines */
@@ -441,9 +446,9 @@
 }
 
 .automi-calendar .rbc-month-view .rbc-event.rbc-selected {
-  outline: 1px solid var(--green-nice) !important;
+  outline: 1px solid rgba(255, 255, 255, 0.55) !important;
   outline-offset: 1px;
-  background: rgba(0, 143, 76, 0.22) !important;
+  background: rgba(255, 255, 255, 0.12) !important;
 }
 
 .automi-calendar .rbc-month-view .rbc-event-content {

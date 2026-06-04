@@ -4,17 +4,15 @@ import { memo } from 'react'
 import { CalendarToolbarProps } from '@/types/calendar/calendar.types'
 import { getCalendarTitle } from '@/utils/calendar/dateUtils'
 import { ToolbarControls } from './ToolbarControls'
-import { CalendarSelector } from './CalendarSelector'
 
 /**
  * CalendarToolbar Component
- * Renders title, navigation controls, view switcher, and calendar selector.
+ * Renders title, navigation controls, and view switcher.
  */
 export const CalendarToolbar = memo(
   ({
     currentDate,
     view,
-    calendars = [],
     onNavigate,
     onViewChange,
   }: CalendarToolbarProps) => {
@@ -37,8 +35,6 @@ export const CalendarToolbar = memo(
             onViewChange={onViewChange}
           />
         </div>
-
-        <CalendarSelector calendars={calendars} />
       </div>
     )
   }

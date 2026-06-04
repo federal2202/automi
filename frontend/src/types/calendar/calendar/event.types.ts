@@ -12,6 +12,12 @@ export interface CalendarEvent {
   type: EventType
   description?: string
   isTask?: boolean
+  /**
+   * Per-event accent color as a hex string (e.g. '#33b679'), derived from the
+   * Google Calendar event `colorId`. When absent, the renderer falls back to
+   * the brand green. Drives the card fill / left-border / accent text.
+   */
+  color?: string
 }
 
 /**

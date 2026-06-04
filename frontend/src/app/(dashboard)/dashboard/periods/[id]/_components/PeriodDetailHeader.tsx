@@ -73,8 +73,8 @@ export function PeriodDetailHeader({
               onClick={onAddActivity}
               className={cn(
                 'inline-flex items-center justify-center gap-2 self-start lg:self-auto',
-                'rounded-lg bg-green-nice px-4 py-2.5 text-sm font-bold text-white',
-                'hover:bg-green-nice/90 active:scale-[0.98] transition-all',
+                'rounded-lg bg-green-dark px-4 py-2.5 text-sm font-bold text-white',
+                'hover:bg-green-dark/90 active:scale-[0.98] transition-all',
                 'font-space-grotesk uppercase tracking-wide'
               )}
             >

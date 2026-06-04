@@ -15,6 +15,7 @@
   --destructive: #ef4444;
   --destructive-foreground: #fefefe;
   --green-nice: #008f4c;
+  --green-dark: #006837;
   --gradient-success-from: #00a85a;
   --gradient-success-to: #007d42;
   --gradient-success-from-hover: #00bd66;
@@ -23,7 +24,7 @@
   --gradient-destructive-to: #b91c1c;
   --gradient-destructive-from-hover: #f87171;
   --gradient-destructive-to-hover: #991b1b;
-  --sidebar: #050505;
+  --sidebar: #0e0e0e;
   --sidebar-foreground: #ededed;
   --sidebar-border: #262626;
   --sidebar-accent: #171717;
@@ -51,6 +52,7 @@
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-green-nice: var(--green-nice);
+  --color-green-dark: var(--green-dark);
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-border: var(--sidebar-border);

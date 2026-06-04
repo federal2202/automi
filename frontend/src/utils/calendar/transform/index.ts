@@ -24,6 +24,7 @@ export * from './parsing'
 export * from './from-google'
 export * from './to-google'
 export * from './range'
+export * from './sanitize-description'
 
 /**
  * Calendar transformation utilities object
