@@ -40,6 +40,7 @@ export function TaskList({ tasks }: TaskListProps) {
 
   const handleToggleDone = (id: string, isDone: boolean) => {
     mutation.mutate({ id, isDone })
+    if (isDone) setSelectedId(null)
   }
 
   const selectedTask = tasks.find((t) => t.id === selectedId) ?? null

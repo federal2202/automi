@@ -4,6 +4,8 @@ import express from 'express';
   import morgan from 'morgan';
   import cookieParser from 'cookie-parser';
   import { config } from 'dotenv';
+import { startTaskEnrichedConsumer } from './services/kafka.service';
+import sseRoutes from './routes/sse';
   import authRoutes from './routes/auth';      
   import calendarRoutes from './routes/calendar';
   import aiRoutes from './routes/tasks';
@@ -40,6 +42,7 @@ import express from 'express';
   app.use('/tasks', aiRoutes);
   app.use('/periods', periodsRoutes);
   app.use('/me', meRoutes);
+  app.use('/sse', sseRoutes);
 
 
   // Health check (уже есть)
@@ -49,6 +52,8 @@ import express from 'express';
 
   // Global error handler
   app.use(errorHandler);
+
+  startTaskEnrichedConsumer().catch(console.error);
 
   app.listen(PORT, () => {
       Logger.info('Server started successfully', {

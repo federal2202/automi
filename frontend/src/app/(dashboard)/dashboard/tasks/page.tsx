@@ -8,6 +8,10 @@ export default function TasksPage() {
   const { data, isLoading, isError } = useQuery({
     queryKey: ['tasks'],
     queryFn: getTasks,
+    refetchInterval: (query) => {
+      const hasPending = query.state.data?.some((t) => t.aiStatus === 'pending')
+      return hasPending ? 3000 : false
+    },
   })
 
   return (

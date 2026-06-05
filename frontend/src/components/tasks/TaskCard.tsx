@@ -11,6 +11,20 @@ interface TaskCardProps {
 }
 
 export function TaskCard({ task, onToggleDone, onOpen, disabled }: TaskCardProps) {
+  if (task.aiStatus === 'pending') {
+    return (
+      <div className="flex h-full flex-col justify-between gap-4 rounded-xl border-2 border-white/10 bg-white/5 p-5">
+        <div className="flex flex-col gap-2">
+          <div className="h-4 w-3/4 animate-pulse rounded bg-white/10" />
+          <div className="h-4 w-1/2 animate-pulse rounded bg-white/10" />
+        </div>
+        <div className="flex justify-end">
+          <div className="h-6 w-24 animate-pulse rounded-full bg-white/10" />
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div
       role="button"

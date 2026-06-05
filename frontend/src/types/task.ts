@@ -22,6 +22,7 @@ export interface Task {
   resources?: Resource[]
   successCriteria: string
   isDone: boolean
+  aiStatus: 'pending' | 'done' | 'failed'
   createdAt: string
   updatedAt: string
 }

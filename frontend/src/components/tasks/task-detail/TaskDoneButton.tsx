@@ -15,7 +15,7 @@ export function TaskDoneButton({
   disabled,
 }: TaskDoneButtonProps) {
   return (
-    <div className="flex justify-end pt-2">
+    <div>
       <button
         type="button"
         onClick={() => onToggleDone(task.id, !task.isDone)}
