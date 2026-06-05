@@ -2,10 +2,21 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { WeeklyCalendar } from '@/components/calendar'
+import dynamic from 'next/dynamic'
 import { useAppSelector } from '@/stores/hooks'
 import { Loader } from '@/components/shared/Loader'
-import '@/styles/calendar.css'
+
+const WeeklyCalendar = dynamic(
+  () => import('@/components/calendar/calendar-main').then((m) => ({ default: m.WeeklyCalendar })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="bg-[#0e0e0e] text-white h-full w-full flex items-center justify-center p-8">
+        <Loader size="lg" label="LOADING CALENDAR // SYNCING EVENTS" />
+      </div>
+    ),
+  }
+)
 
 export default function CalendarPage() {
     const router = useRouter()
@@ -14,17 +25,11 @@ export default function CalendarPage() {
     const isInitialized = useAppSelector((s) => s.auth.isInitialized)
 
     useEffect(() => {
-        // Only redirect once auth has been definitively checked at least once.
-        // Without `isInitialized`, the guard can fire on first paint (or on
-        // re-navigation before checkAuth resolves) and redirect an
-        // authenticated user to /signup.
         if (isInitialized && !isLoading && !isAuthenticated) {
             router.replace('/signup')
         }
     }, [isInitialized, isLoading, isAuthenticated, router])
 
-    // Avoid flashing the calendar before auth state is resolved
-    // or while we're about to redirect.
     if (!isInitialized || isLoading || !isAuthenticated) {
         return (
             <div className="bg-[#0e0e0e] text-white h-full w-full flex items-center justify-center p-8">

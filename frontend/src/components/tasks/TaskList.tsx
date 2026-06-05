@@ -1,11 +1,16 @@
 "use client"
 
 import { useState } from 'react'
+import dynamic from 'next/dynamic'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Task } from '@/types/task'
 import { toggleTaskDone } from '@/services/tasks.service'
 import { TaskCard } from './TaskCard'
-import { TaskDetailDialog } from './TaskDetailDialog'
+
+const TaskDetailDialog = dynamic(
+  () => import('./TaskDetailDialog').then((m) => ({ default: m.TaskDetailDialog })),
+  { ssr: false }
+)
 
 interface TaskListProps {
   tasks: Task[]

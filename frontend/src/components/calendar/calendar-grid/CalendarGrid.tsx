@@ -12,6 +12,7 @@ import { useCalendarGridHandlers } from './useCalendarGridHandlers'
 import { buildCalendarComponents, useEventComponents } from './useEventComponents'
 import 'react-big-calendar/lib/css/react-big-calendar.css'
 import 'react-big-calendar/lib/addons/dragAndDrop/styles.css'
+import '@/styles/calendar.css'
 
 const localizer = momentLocalizer(moment)
 const DragAndDropCalendar = withDragAndDrop<CalendarEvent>(BigCalendar)

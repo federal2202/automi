@@ -1,17 +1,20 @@
 "use client"
 
+import dynamic from 'next/dynamic'
 import { useParams } from 'next/navigation'
-import { RecurringActivityFormDialog } from '@/components/activities/RecurringActivityFormDialog'
-import { ConfirmDeleteDialog } from '@/components/periods/ConfirmDeleteDialog'
 import { usePeriodDetail } from '@/hooks/periods'
 import { PeriodDetailHeader } from './_components/PeriodDetailHeader'
 import { ActivitiesSection } from './_components/ActivitiesSection'
 
-/**
- * Detail page for a single Period. Lists Recurring Activities grouped by day
- * of week (Mon → Sun). A thin container that wires `usePeriodDetail` to the
- * header, activities section and dialogs.
- */
+const RecurringActivityFormDialog = dynamic(
+  () => import('@/components/activities/RecurringActivityFormDialog').then((m) => ({ default: m.RecurringActivityFormDialog })),
+  { ssr: false }
+)
+const ConfirmDeleteDialog = dynamic(
+  () => import('@/components/periods/ConfirmDeleteDialog').then((m) => ({ default: m.ConfirmDeleteDialog })),
+  { ssr: false }
+)
+
 export default function PeriodDetailPage() {
   const params = useParams<{ id: string }>()
   const periodId = params?.id ?? ''

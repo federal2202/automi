@@ -1,11 +1,19 @@
 "use client"
 
-import { PeriodFormDialog } from '@/components/periods/PeriodFormDialog'
-import { ConfirmDeleteDialog } from '@/components/periods/ConfirmDeleteDialog'
-import { QueryErrorRetry } from '@/components/periods/QueryErrorRetry'
+import dynamic from 'next/dynamic'
 import { usePeriods } from '@/hooks/periods'
 import { PeriodsHeader } from './_components/PeriodsHeader'
 import { PeriodsEmptyState, PeriodsGrid } from './_components/PeriodsGrid'
+import { QueryErrorRetry } from '@/components/periods/QueryErrorRetry'
+
+const PeriodFormDialog = dynamic(
+  () => import('@/components/periods/PeriodFormDialog').then((m) => ({ default: m.PeriodFormDialog })),
+  { ssr: false }
+)
+const ConfirmDeleteDialog = dynamic(
+  () => import('@/components/periods/ConfirmDeleteDialog').then((m) => ({ default: m.ConfirmDeleteDialog })),
+  { ssr: false }
+)
 
 export default function PeriodsPage() {
   const {
