@@ -40,3 +40,7 @@ coverage/
 
 # Vercel
 .vercel
+
+# Markdown docs (kept local only, not tracked in the repo)
+*.md
+*.markdown
