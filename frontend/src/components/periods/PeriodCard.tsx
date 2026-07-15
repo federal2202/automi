@@ -44,7 +44,7 @@ function PeriodCardImpl({
   return (
     <div
       className={cn(
-        'group relative h-full rounded-xl border-2 backdrop-blur-sm transition-all',
+        'group relative h-full min-w-0 rounded-xl border-2 backdrop-blur-sm transition-all',
         'border-white/10 bg-white/5 hover:bg-white/[0.08] hover:-translate-y-0.5',
         'focus-within:ring-2 focus-within:ring-green-nice focus-within:ring-offset-2 focus-within:ring-offset-bg-surface'
       )}
@@ -53,12 +53,12 @@ function PeriodCardImpl({
         href={href}
         aria-label={`Open ${period.title}`}
         className={cn(
-          'flex h-full flex-col justify-between gap-4 p-5 rounded-xl',
+          'flex h-full flex-col justify-between gap-4 p-4 sm:p-5 rounded-xl',
           'focus:outline-none'
         )}
       >
         <div className="flex flex-col gap-2 min-w-0">
-          <h3 className="font-space-grotesk text-xl font-bold leading-tight tracking-[-0.5px] text-text-primary line-clamp-2">
+          <h3 className="min-w-0 break-words font-space-grotesk text-lg sm:text-xl font-bold leading-tight tracking-[-0.5px] text-text-primary line-clamp-2">
             {period.title}
           </h3>
           <p className="text-sm text-white/70 font-jakarta">

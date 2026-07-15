@@ -46,8 +46,8 @@ export function WelcomeStep({ onNext }: WelcomeStepProps) {
           type="button"
           onClick={onNext}
           className={cn(
-            'h-10 rounded-lg bg-green-nice px-5 text-sm font-bold text-white',
-            'hover:bg-green-nice/90 transition-colors',
+            'h-10 rounded-lg border border-green-nice/40 bg-green-nice/15 px-5 text-sm font-bold text-green-200',
+            'hover:bg-green-nice/25 transition-colors',
             'font-space-grotesk uppercase tracking-wide',
             'focus:outline-none focus-visible:ring-2 focus-visible:ring-green-nice/60'
           )}

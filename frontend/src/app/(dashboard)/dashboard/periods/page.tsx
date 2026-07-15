@@ -39,7 +39,7 @@ export default function PeriodsPage() {
     listQuery
 
   return (
-    <div className="bg-bg-surface text-white min-h-full w-full flex flex-col p-2 sm:p-4 md:p-6 lg:p-8">
+    <div className="bg-bg-surface text-white min-h-full w-full min-w-0 overflow-x-hidden flex flex-col p-4 sm:p-4 md:p-6 lg:p-8">
       <PeriodsHeader onCreate={openCreate} />
 
       {actionError && (

@@ -49,12 +49,12 @@ function RecurringActivityCardImpl({
   return (
     <div
       className={cn(
-        'flex flex-col gap-3 rounded-lg border border-white/10 bg-white/5 px-4 py-3 backdrop-blur-sm transition-colors',
+        'flex min-w-0 flex-col gap-3 rounded-lg border border-white/10 bg-white/5 px-4 py-3 backdrop-blur-sm transition-colors',
         'hover:bg-white/[0.08] sm:flex-row sm:items-center sm:justify-between'
       )}
     >
       <div className="flex flex-col gap-1 min-w-0">
-        <h4 className="font-space-grotesk text-base font-semibold leading-tight text-text-primary line-clamp-2">
+        <h4 className="min-w-0 break-words font-space-grotesk text-base font-semibold leading-tight text-text-primary line-clamp-2">
           {activity.title}
         </h4>
         {/* entriesShareTimes returns `false` for an empty schedule, so the

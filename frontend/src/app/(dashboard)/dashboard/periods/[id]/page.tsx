@@ -45,7 +45,7 @@ export default function PeriodDetailPage() {
   const hasActivities = Boolean(activities && activities.length > 0)
 
   return (
-    <div className="bg-bg-surface text-white min-h-full w-full flex flex-col p-2 sm:p-4 md:p-6 lg:p-8">
+    <div className="bg-bg-surface text-white min-h-full w-full min-w-0 overflow-x-hidden flex flex-col p-4 sm:p-4 md:p-6 lg:p-8">
       <PeriodDetailHeader
         period={period}
         isLoading={periodQuery.isLoading}

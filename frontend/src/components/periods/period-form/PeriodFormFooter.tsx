@@ -34,8 +34,8 @@ export function PeriodFormFooter({
         type="submit"
         disabled={isSubmitting}
         className={cn(
-          'rounded-lg bg-green-dark px-4 py-2 text-sm font-bold text-white',
-          'hover:bg-green-dark/90 transition-colors',
+          'rounded-lg border border-green-nice/40 bg-green-nice/15 px-4 py-2 text-sm font-bold text-green-200',
+          'hover:bg-green-nice/25 transition-colors',
           'font-space-grotesk uppercase tracking-wide',
           isSubmitting && 'opacity-60 cursor-not-allowed'
         )}
@@ -44,7 +44,7 @@ export function PeriodFormFooter({
           <span className="inline-flex items-center gap-2">
             <span
               aria-hidden
-              className="inline-block h-3.5 w-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin"
+              className="inline-block h-3.5 w-3.5 rounded-full border-2 border-green-200/40 border-t-green-200 animate-spin"
             />
             {isEdit ? 'Syncing to Google Calendar...' : 'Creating...'}
           </span>
