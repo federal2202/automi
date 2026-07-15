@@ -43,7 +43,7 @@ export function TaskDetailDialog({
           'flex flex-col overflow-hidden p-4 pt-6 sm:p-6',
         ].join(' ')}
       >
-        <DialogHeader className="shrink-0 pr-8">
+        <DialogHeader className="shrink-0 pr-12 sm:pr-8">
           <DialogTitle className="font-['Space_Grotesk'] text-xl sm:text-2xl font-bold tracking-[-0.5px] text-[#e5e2e1] normal-case break-words">
             {task.title}
           </DialogTitle>
@@ -53,16 +53,16 @@ export function TaskDetailDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="min-h-0 flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mt-4 overflow-y-auto md:overflow-visible -mx-1 px-1">
+        <div className="min-h-0 flex-1 grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-6 mt-4 overflow-y-auto md:overflow-visible -mx-1 px-1">
           {/* Left column */}
-          <div className="min-h-0 flex flex-col gap-4 md:overflow-y-auto md:pr-2">
+          <div className="flex flex-col gap-4 md:min-h-0 md:overflow-y-auto md:pr-2">
             <TaskDescription task={task} />
             <TaskResources task={task} />
             <TaskSuccessCriteria task={task} />
           </div>
 
           {/* Right column */}
-          <div className="min-h-0 md:overflow-y-auto md:pr-2">
+          <div className="border-t border-white/10 pt-5 md:border-t-0 md:pt-0 md:min-h-0 md:overflow-y-auto md:pr-2">
             <TaskSteps task={task} />
           </div>
         </div>

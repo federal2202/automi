@@ -46,9 +46,9 @@ const DialogContent = forwardRef<
     >
       {children}
       <DialogPrimitive.Close
-        className="absolute right-4 top-4 inline-flex size-7 items-center justify-center rounded-md text-[#ffffff]/60 transition-all hover:text-white hover:bg-white/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--green-nice)_50%,transparent)] disabled:pointer-events-none"
+        className="absolute right-3 top-3 sm:right-4 sm:top-4 inline-flex size-9 sm:size-7 items-center justify-center rounded-full sm:rounded-md bg-white/5 sm:bg-transparent text-[#ffffff]/70 transition-all hover:text-white hover:bg-white/10 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--green-nice)_50%,transparent)] disabled:pointer-events-none"
       >
-        <X className="h-4 w-4" />
+        <X className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
         <span className="sr-only">Close</span>
       </DialogPrimitive.Close>
     </DialogPrimitive.Content>
