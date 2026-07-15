@@ -1,12 +1,13 @@
 'use client'
 
 import { memo } from 'react'
-import { Calendar as BigCalendar, momentLocalizer, Views } from 'react-big-calendar'
+import { Calendar as BigCalendar, momentLocalizer, Views, type SlotInfo } from 'react-big-calendar'
 import withDragAndDrop from 'react-big-calendar/lib/addons/dragAndDrop'
 import moment from 'moment'
 import { cn } from '@/utils/cn'
 import { CalendarEvent, CalendarView } from '@/types/calendar/calendar.types'
 import { getAvailableViews, getCalendarFormats } from '@/utils/calendar/dateUtils'
+import { useIsMobile } from '@/hooks/use-mobile'
 import { getDayProps, getEventStyle } from './calendar-grid.utils'
 import { useCalendarGridHandlers } from './useCalendarGridHandlers'
 import { buildCalendarComponents, useEventComponents } from './useEventComponents'
@@ -48,6 +49,25 @@ export const CalendarGrid = memo(
   }: CalendarGridProps) => {
     const handlers = useCalendarGridHandlers()
     const eventComponents = useEventComponents(staggerMap)
+    const isMobile = useIsMobile()
+
+    // On mobile, month view is too dense to reliably tap the tiny date
+    // number (the only spot that fires onDrillDown below) — so a tap
+    // anywhere in the day cell opens that day instead of the create-event
+    // modal. Desktop keeps the two-target behavior (number -> day view,
+    // cell body -> create event) since there's room to hit either precisely.
+    const handleSelectSlot = (slotInfo: SlotInfo) => {
+      if (
+        isMobile &&
+        view === Views.MONTH &&
+        (slotInfo.action === 'click' || slotInfo.action === 'select')
+      ) {
+        onDateChange(slotInfo.start)
+        onViewChange(Views.DAY)
+        return
+      }
+      handlers.handleSlotSelect(slotInfo)
+    }
 
     return (
       <div className="w-full flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
@@ -67,7 +87,7 @@ export const CalendarGrid = memo(
             onViewChange(Views.DAY)
           }}
           selectable={true}
-          onSelectSlot={handlers.handleSlotSelect}
+          onSelectSlot={handleSelectSlot}
           onSelectEvent={handlers.handleEventSelect}
           onEventDrop={handlers.handleEventDrop}
           onEventResize={handlers.handleEventResize}

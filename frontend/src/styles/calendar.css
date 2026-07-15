@@ -270,13 +270,31 @@
 
 .automi-calendar .rbc-month-view {
   background: transparent;
-  border: 1px solid rgba(229, 226, 225, 0.06);
+  border-color: rgba(229, 226, 225, 0.06);
   border-radius: 14px;
   overflow: hidden;
   width: 100%;
   min-width: 0;
   display: flex;
   flex-direction: column;
+}
+
+/* react-big-calendar's own stylesheet sets these same internal grid lines
+   via border-top / border-left (light gray #ddd) on the "+" adjacent-sibling
+   selectors below. Our rules further down override border-bottom /
+   border-right on the *same* elements, which is a different side of the box
+   model — so the library's bright default kept showing through as visible
+   white gridlines. Override the exact side + selector the library uses. */
+.automi-calendar .rbc-month-row + .rbc-month-row {
+  border-top-color: rgba(229, 226, 225, 0.06);
+}
+
+.automi-calendar .rbc-day-bg + .rbc-day-bg {
+  border-left-color: rgba(229, 226, 225, 0.06);
+}
+
+.automi-calendar .rbc-off-range-bg {
+  background: transparent;
 }
 
 /* Kill any horizontal scroll inside month view */
