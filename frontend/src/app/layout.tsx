@@ -33,7 +33,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${jakartaSans.variable} ${spaceGrotesk.variable} h-full antialiased`}
+      className={`${jakartaSans.variable} ${spaceGrotesk.variable} h-full antialiased scroll-smooth`}
     >
       <body className={`${jakartaSans.className} min-h-full bg-background`}>
         <ReduxProvider>

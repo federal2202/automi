@@ -1,13 +1,35 @@
 "use client";
 
+import { Suspense } from "react";
 import { Globe } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+
+const ERROR_MESSAGES: Record<string, string> = {
+  missing_scopes:
+    "Login failed — Google Calendar access wasn't granted. automi needs calendar permission to work. Please try again and make sure to allow calendar access on the Google consent screen.",
+  no_user: "Login failed — no account data was returned. Please try again.",
+  invalid_user: "Login failed — your account data couldn't be read. Please try again.",
+  auth_failed: "Login failed — something went wrong during authentication. Please try again.",
+};
 
 export default function Page(){
+  return (
+    <Suspense>
+      <SignupContent />
+    </Suspense>
+  );
+}
+
+function SignupContent(){
+  const searchParams = useSearchParams();
+  const error = searchParams.get('error');
+  const errorMessage = error ? ERROR_MESSAGES[error] ?? ERROR_MESSAGES.auth_failed : null;
+
   function handleLogin(){
     // Direct redirect to backend OAuth endpoint
     window.location.href = 'http://localhost:8000/auth/google';
   }
-  
+
   return (
     <div className="min-h-screen w-full bg-background flex items-center justify-center p-4">
       {/* Background gradient overlay */}
@@ -39,7 +61,16 @@ export default function Page(){
                 Continue your journey with seamless productivity
               </p>
             </div>
-            
+
+            {errorMessage && (
+              <div
+                role="alert"
+                className="w-full rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-3 animate-fade-in-up"
+              >
+                <p className="text-sm text-red-400 leading-relaxed">{errorMessage}</p>
+              </div>
+            )}
+
             {/* Google login button */}
             <div className="w-full animate-fade-in-up" style={{animationDelay: '0.6s'}}>
               <button

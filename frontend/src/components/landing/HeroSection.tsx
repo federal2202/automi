@@ -1,11 +1,14 @@
 "use client"
 
 
+import { useRouter } from "next/navigation";
 import BreakthroughSection from "../shared/BreakThorugh";
 import Button from "../shared/Button";
 import SecondaryText from "../shared/SecondaryText";
 
 export default function HeroSection(){
+    const router = useRouter();
+
     return (
         <div className="w-full flex flex-col items-center relative min-h-screen overflow-hidden pt-20">
             {/* <div className="fixed inset-0 w-full h-full pointer-events-none" style={{background: 'radial-gradient(circle at center, rgba(34, 197, 94, 0.08) 0%, transparent 90%)'}}></div> */}
@@ -28,10 +31,10 @@ export default function HeroSection(){
                 
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up w-full px-4 md:px-0" style={{animationDelay: '1.2s'}}>
                     <div className="transform hover:scale-105 transition-all duration-300 hover:shadow-lg hover:shadow-green-500/25 w-full sm:w-auto">
-                        <Button text="Start Automating" onClick={() => {}} type="primary" size="large" />
+                        <Button text="Start Automating" onClick={() => router.push('/signup')} type="primary" size="large" />
                     </div>
                     <div className="transform hover:scale-105 transition-all duration-300 hover:shadow-lg w-full sm:w-auto">
-                        <Button text="View Protocol" onClick={() => {}} type="secondary" size="large" />
+                        <Button text="View Protocol" onClick={() => router.push('/#product')} type="secondary" size="large" />
                     </div>
                 </div>
                 

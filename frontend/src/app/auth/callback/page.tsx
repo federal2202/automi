@@ -16,6 +16,14 @@ export default function CallbackPage() {
     const handleCallback = async () => {
       try {
         const urlParams = new URLSearchParams(window.location.search);
+        const errorParam = urlParams.get('error');
+
+        if (errorParam) {
+          console.error('OAuth callback error:', errorParam);
+          router.push(`/signup?error=${errorParam}`);
+          return;
+        }
+
         const userParam = urlParams.get('user');
 
         if (!userParam) {

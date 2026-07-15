@@ -9,7 +9,7 @@ import {
 
 export default function AboutSection() {
     return (
-        <div className="w-full flex flex-col items-center py-0 md:py-0 px-4">
+        <div id="features" className="w-full flex flex-col items-center py-0 md:py-0 px-4">
             <div className="max-w-7xl w-full grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16">
 
                 {/* Reality Block - Red */}

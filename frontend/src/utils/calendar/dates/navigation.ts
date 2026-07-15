@@ -26,10 +26,10 @@ export const navigateCalendarDate = (
 /**
  * Get calendar title based on view
  */
-export const getCalendarTitle = (view: View): string => {
+export const getCalendarTitle = (view: View, currentDate: Date): string => {
   switch (view) {
     case Views.DAY:
-      return 'DAILY MANIFEST'
+      return `DAILY MANIFEST — ${moment(currentDate).format('dddd, MMMM D').toUpperCase()}`
     case Views.MONTH:
       return 'MONTHLY MANIFEST'
     default:

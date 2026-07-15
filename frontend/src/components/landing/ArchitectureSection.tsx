@@ -4,7 +4,7 @@ import { SystemMomentumIcon, AISchedulingIcon, ObsidianInterfaceIcon, SyncIcon }
 
 export default function ArchitectureSection() {
     return (
-        <div className="w-full flex flex-col items-center py-16 md:py-20 px-4">
+        <div id="product" className="w-full flex flex-col items-center py-16 md:py-20 px-4">
             <div className="max-w-7xl w-full">
                 
                 {/* Header Section */}

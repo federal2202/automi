@@ -21,7 +21,7 @@ export const CalendarToolbar = memo(
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div className="flex flex-col">
             <h1 className="text-2xl md:text-3xl lg:text-[48px] font-bold text-[#e5e2e1] tracking-[-2.4px] uppercase leading-tight font-['Space_Grotesk']">
-              {getCalendarTitle(view)}
+              {getCalendarTitle(view, currentDate)}
             </h1>
             <p className="text-[10px] md:text-[11px] text-[#6b7280] tracking-[1.1px] uppercase font-['Plus_Jakarta_Sans']">
               PRECISION SCHEDULING PROTOCOL // CLUSTER 09-ALPHA

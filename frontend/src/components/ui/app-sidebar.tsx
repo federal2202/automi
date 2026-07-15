@@ -21,7 +21,6 @@ import {
   Calendar,
   CheckSquare,
   CalendarRange,
-  Settings,
   Plus,
   Menu,
   X,
@@ -59,11 +58,6 @@ export default function AppSidebar() {
       title: "Periods",
       icon: CalendarRange,
       url: "/dashboard/periods",
-    },
-    {
-      title: "Settings",
-      icon: Settings,
-      url: "/dashboard/settings",
     },
   ]
 

@@ -1,7 +1,7 @@
 'use client'
 
 import { memo } from 'react'
-import { Calendar as BigCalendar, momentLocalizer } from 'react-big-calendar'
+import { Calendar as BigCalendar, momentLocalizer, Views } from 'react-big-calendar'
 import withDragAndDrop from 'react-big-calendar/lib/addons/dragAndDrop'
 import moment from 'moment'
 import { cn } from '@/utils/cn'
@@ -62,6 +62,10 @@ export const CalendarGrid = memo(
           views={getAvailableViews()}
           date={currentDate}
           onNavigate={onDateChange}
+          onDrillDown={(date) => {
+            onDateChange(date)
+            onViewChange(Views.DAY)
+          }}
           selectable={true}
           onSelectSlot={handlers.handleSlotSelect}
           onSelectEvent={handlers.handleEventSelect}

@@ -16,30 +16,25 @@ export default function Navbar(){
         <Logo />
       </div>
       <div className='hidden sm:flex items-center justify-between max-w-[220px] w-full animate-fade-in-up' style={{animationDelay: '0.3s'}}>
-        <Link href="/features">
+        <Link href="#features">
           <span className='text-[14px] md:text-[16px] leading-[24px] text-secondary transition-all duration-300 hover:text-white hover:scale-105'>
             Features
           </span>
         </Link>
-        <Link href="/product">
+        <Link href="#product">
           <span className='text-[14px] md:text-[16px] leading-[24px] text-secondary transition-all duration-300 hover:text-white hover:scale-105'>
             Product
-          </span>
-        </Link>
-        <Link href="/pricing">
-          <span className='text-[14px] md:text-[16px] leading-[24px] text-secondary transition-all duration-300 hover:text-white hover:scale-105'>
-            Pricing
           </span>
         </Link>
       </div>
       <div className='animate-slide-in-right' style={{animationDelay: '0.5s'}}>
         {isAuthenticated ? (
           <div className="transform hover:scale-105 transition-all duration-300">
-            <Button type="secondary" size="small" text="Dashboard" onClick={() => router.push('/dashboard')} />
+            <Button type="secondary" size="small" text="Dashboard" onClick={() => router.push('/dashboard/calendar')} />
           </div>
         ) : (
           <div className='transform hover:scale-105 transition-all duration-300'>
-            <Button type="primary" size="small" text="Login" />
+            <Button type="primary" size="small" text="Login" onClick={() => router.push('/signup')} />
           </div>
         )}
       </div>
