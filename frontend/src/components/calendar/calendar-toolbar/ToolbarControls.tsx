@@ -23,7 +23,7 @@ export function ToolbarControls({
   onViewChange,
 }: ToolbarControlsProps) {
   return (
-    <div className="flex items-center justify-between sm:justify-start gap-2 sm:gap-4">
+    <div className="flex flex-wrap items-center justify-between sm:justify-start gap-x-2 gap-y-2 sm:gap-x-4">
       {/* Month/year label + prev/next, combined into one pill so the whole
           nav control reads as a single unit on narrow screens instead of
           three separate rows stacked in a column. */}
@@ -56,7 +56,7 @@ export function ToolbarControls({
             key={viewType}
             onClick={() => onViewChange(viewType)}
             className={cn(
-              'px-2 sm:px-3 py-1 text-[9px] sm:text-[10px] font-bold tracking-wide uppercase transition-all duration-200 rounded-full',
+              'px-1.5 sm:px-3 py-1 text-[9px] sm:text-[10px] font-bold tracking-wide uppercase transition-all duration-200 rounded-full',
               view === viewType
                 ? 'bg-[#059669] text-white'
                 : 'text-[#6b7280] hover:text-white hover:bg-[rgba(59,75,53,0.2)]'
