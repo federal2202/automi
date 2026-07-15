@@ -37,14 +37,14 @@ export function TaskCard({ task, onToggleDone, onOpen, disabled }: TaskCardProps
         }
       }}
       className={cn(
-        'group flex h-full cursor-pointer flex-col justify-between gap-4 rounded-xl border-2 p-5 backdrop-blur-sm transition-all',
-        'hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--green-nice)_50%,transparent)]',
+        'group flex h-full min-w-0 cursor-pointer flex-col justify-between gap-3 sm:gap-4 rounded-xl border-2 p-4 sm:p-5 backdrop-blur-sm transition-all',
+        'hover:-translate-y-0.5 active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--green-nice)_50%,transparent)]',
         task.isDone
           ? 'bg-emerald-500/15 border-emerald-500/60 hover:bg-emerald-500/20'
           : 'bg-red-500/15 border-red-500/50 hover:bg-red-500/20'
       )}
     >
-      <div className="flex items-start gap-2 min-w-0">
+      <div className="flex min-w-0 items-start gap-2">
         {task.isDone && (
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -62,7 +62,7 @@ export function TaskCard({ task, onToggleDone, onOpen, disabled }: TaskCardProps
         )}
         <h3
           className={cn(
-            "font-['Space_Grotesk'] text-lg font-bold leading-tight tracking-[-0.5px] line-clamp-2",
+            "min-w-0 flex-1 break-words font-['Space_Grotesk'] text-base sm:text-lg font-bold leading-tight tracking-[-0.5px] line-clamp-2",
             task.isDone ? 'text-white/55 line-through' : 'text-[#e5e2e1]'
           )}
         >

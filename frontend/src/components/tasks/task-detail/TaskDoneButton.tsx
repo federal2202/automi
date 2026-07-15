@@ -15,13 +15,13 @@ export function TaskDoneButton({
   disabled,
 }: TaskDoneButtonProps) {
   return (
-    <div>
+    <div className="w-full sm:w-auto">
       <button
         type="button"
         onClick={() => onToggleDone(task.id, !task.isDone)}
         disabled={disabled}
         className={cn(
-          "rounded-full border px-4 py-1.5 text-[11px] font-bold uppercase tracking-[1.1px] transition-colors font-['Plus_Jakarta_Sans']",
+          "flex w-full sm:w-auto items-center justify-center rounded-full border px-4 py-2.5 sm:py-1.5 text-[11px] font-bold uppercase tracking-[1.1px] transition-colors font-['Plus_Jakarta_Sans']",
           task.isDone
             ? 'border-white/15 bg-white/10 text-white/80 hover:bg-white/15'
             : 'border-emerald-500/60 bg-emerald-500/20 text-emerald-200 hover:bg-emerald-500/30',

@@ -12,10 +12,11 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
                 <AppSidebar />
                 <SidebarInset className="flex-1 h-full">
                     <div className="flex flex-col h-full w-full flex-1">
-                        <div className="md:hidden h-14 flex items-center gap-2 px-4 border-b border-sidebar-border/50 shrink-0">
-                            <SidebarTrigger className="text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent" />
+                        <header className="md:hidden sticky top-0 z-20 flex h-14 shrink-0 items-center gap-3 border-b border-sidebar-border/50 bg-[#0e0e0e]/90 px-4 backdrop-blur-md">
+                            <SidebarTrigger className="h-9 w-9 rounded-lg text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent [&_svg]:size-[18px]" />
+                            <div className="h-5 w-px bg-sidebar-border/50" />
                             <Logo />
-                        </div>
+                        </header>
                         {children}
                     </div>
                 </SidebarInset>
