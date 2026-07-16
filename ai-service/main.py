@@ -3,85 +3,31 @@ import json
 import os
 from dotenv import load_dotenv
 from aiokafka import AIOKafkaConsumer, AIOKafkaProducer
-import google.generativeai as genai
 import asyncpg
+
+from ai_worker import generate_task, save_task, mark_failed
 
 load_dotenv()
 
 KAFKA_BROKER = os.getenv("KAFKA_BROKER", "localhost:9092")
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 DATABASE_URL = os.getenv("DATABASE_URL")
-
-genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel("gemini-3-flash-preview")
-
-
-async def generate_task(title: str) -> dict:
-    prompt = f"""You are a productivity assistant. Given a calendar event title, generate a structured task breakdown in JSON.
-
-Event title: "{title}"
-
-Return ONLY valid JSON matching this exact shape (no markdown, no code fences):
-{{
-  "title": "string",
-  "description": "string",
-  "estimatedTimeMinutes": number,
-  "difficulty": "easy" | "medium" | "hard",
-  "steps": [
-    {{
-      "stepNumber": number,
-      "title": "string",
-      "instruction": "string"
-    }}
-  ],
-  "resources": [
-    {{
-      "title": "string",
-      "type": "article or video or tool or document",
-      "url": "string - a real working URL"
-    }}
-  ],
-  "successCriteria": "string"
-}}"""
-
-    response = model.generate_content(prompt)
-    text = response.text.strip()
-    return json.loads(text)
-
-
-async def save_task(db: asyncpg.Connection, task_id: str, task: dict):
-    await db.execute("""
-        UPDATE tasks SET
-            title = $2,
-            description = $3,
-            "estimatedTimeMinutes" = $4,
-            difficulty = $5,
-            steps = $6::jsonb,
-            resources = $7::jsonb,
-            "successCriteria" = $8,
-            "aiStatus" = 'done',
-            "updatedAt" = NOW()
-        WHERE id = $1
-    """,
-        task_id,
-        task["title"],
-        task["description"],
-        task["estimatedTimeMinutes"],
-        task["difficulty"],
-        json.dumps(task["steps"]),
-        json.dumps(task.get("resources", [])),
-        task["successCriteria"],
-    )
 
 
 async def main():
-    db = await asyncpg.connect(DATABASE_URL)
+    # A connection POOL instead of one long-lived connection: cheap/serverless
+    # Postgres (Supabase/Neon) drops idle connections, which used to kill the
+    # single connection permanently (BUG-4). The pool reconnects transparently.
+    pool = await asyncpg.create_pool(DATABASE_URL, min_size=1, max_size=5)
 
     consumer = AIOKafkaConsumer(
         "task.created",
         bootstrap_servers=KAFKA_BROKER,
         group_id="ai-service",
         value_deserializer=lambda m: json.loads(m.decode("utf-8")),
+        # Commit manually so a crash mid-processing doesn't silently drop the
+        # message (default auto-commit committed even on failure).
+        enable_auto_commit=False,
+        auto_offset_reset="earliest",
     )
 
     producer = AIOKafkaProducer(
@@ -96,22 +42,56 @@ async def main():
     try:
         async for message in consumer:
             payload = message.value
+            task_id = payload.get("taskId")
             print(f"Received: {payload}")
+
+            if not task_id:
+                # Nothing we can key a DB update on — skip rather than run an
+                # UPDATE ... WHERE id = NULL that silently touches zero rows.
+                print(f"Skipping message with no taskId: {payload}")
+                await consumer.commit()
+                continue
 
             try:
                 task = await generate_task(payload["title"])
-                await save_task(db, payload["taskId"], task)
-                await producer.send("task.enriched", {
-                    "taskId": payload["taskId"],
-                    "userId": payload["userId"],
-                })
-                print(f"Task enriched: {payload['taskId']}")
+                async with pool.acquire() as db:
+                    await save_task(db, task_id, task)
+                print(f"Task enriched: {task_id}")
             except Exception as e:
-                print(f"Failed to process task: {e}")
+                # Any failure marks the task 'failed' so the UI stops spinning
+                # instead of showing a task stuck on 'pending' forever (BUG-3).
+                print(f"Failed to process task {task_id}: {e}")
+                try:
+                    async with pool.acquire() as db:
+                        await mark_failed(db, task_id)
+                except Exception as inner:
+                    print(f"Also failed to mark task failed: {inner}")
+                await consumer.commit()
+                continue
+
+            # Notify separately from the generate+save step: if this publish
+            # fails (e.g. a transient Kafka blip) the task is already correctly
+            # saved as 'done' in the DB — the previous code re-used the same
+            # except block and would wrongly flip a successful task back to
+            # 'failed', discarding correct data over a notification hiccup.
+            # Worst case here is a missed real-time push; the frontend still
+            # picks it up on the next poll/reload.
+            try:
+                # Forward taskId + eventId so the backend consumer has a real id
+                # to notify the client with (BUG-2).
+                await producer.send("task.enriched", {
+                    "taskId": task_id,
+                    "eventId": payload.get("eventId"),
+                    "userId": payload.get("userId"),
+                })
+            except Exception as e:
+                print(f"Task {task_id} enriched but failed to publish notification: {e}")
+
+            await consumer.commit()
     finally:
         await consumer.stop()
         await producer.stop()
-        await db.close()
+        await pool.close()
 
 
 if __name__ == "__main__":

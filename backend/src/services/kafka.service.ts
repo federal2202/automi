@@ -11,8 +11,17 @@ let consumer: Consumer | null = null;
 
 export async function getProducer(): Promise<Producer> {
   if (!producer) {
-    producer = kafka.producer();
-    await producer.connect();
+    const p = kafka.producer();
+    try {
+      await p.connect();
+    } catch (error) {
+      // Don't cache a producer whose connect() never succeeded — otherwise
+      // every future publishTaskCreated() call reuses the same broken
+      // instance and fails forever until the process restarts.
+      producer = null;
+      throw error;
+    }
+    producer = p;
   }
   return producer;
 }
@@ -24,8 +33,21 @@ export async function startTaskEnrichedConsumer(): Promise<void> {
 
   await consumer.run({
     eachMessage: async ({ message }) => {
-      const payload = JSON.parse(message.value!.toString());
-      notifyUser(payload.userId, { type: "task.enriched", eventId: payload.eventId });
+      // A malformed message (bad JSON, missing userId) must not throw here:
+      // kafkajs treats an eachMessage exception as fatal and crashes/retries
+      // the whole consumer, silently killing real-time SSE for every user.
+      try {
+        const payload = JSON.parse(message.value?.toString() ?? "");
+        if (!payload?.userId || !payload?.taskId) {
+          console.error("task.enriched: message missing userId/taskId", payload);
+          return;
+        }
+        // Forward taskId (the AI worker publishes taskId, not eventId). Previously
+        // this read payload.eventId which was always undefined — see BUG-2.
+        notifyUser(payload.userId, { type: "task.enriched", taskId: payload.taskId });
+      } catch (error) {
+        console.error("Failed to process task.enriched message:", error);
+      }
     },
   });
 }

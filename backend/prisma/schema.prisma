@@ -17,6 +17,13 @@ model User {
   refreshToken String
   expiresAt    DateTime
   scope        String
+  // Bumped on logout so a previously-issued refresh JWT (valid up to 7 days)
+  // is rejected by /auth/refresh even though its signature still checks out —
+  // the only revocation mechanism available without a separate token-blacklist
+  // store. Access tokens are short-lived (30 min) and are not checked against
+  // this, which is an accepted tradeoff: a stolen access token self-expires
+  // quickly regardless.
+  tokenVersion Int      @default(0)
   timezone               String    @default("UTC")
   onboardingCompletedAt  DateTime?
   createdAt              DateTime  @default(now())

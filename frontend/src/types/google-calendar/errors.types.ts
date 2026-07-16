@@ -35,7 +35,7 @@ export interface GoogleCalendarError {
  */
 export interface CalendarServiceError {
   /** Error type identifier */
-  type: 'NETWORK_ERROR' | 'AUTH_ERROR' | 'VALIDATION_ERROR' | 'GOOGLE_API_ERROR' | 'UNKNOWN_ERROR'
+  type: 'NETWORK_ERROR' | 'AUTH_ERROR' | 'REAUTH_REQUIRED' | 'VALIDATION_ERROR' | 'GOOGLE_API_ERROR' | 'UNKNOWN_ERROR'
   /** Human-readable error message */
   message: string
   /** Original error object */

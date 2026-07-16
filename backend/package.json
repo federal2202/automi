@@ -11,7 +11,10 @@
     "db:migrate": "npx prisma migrate dev",
     "db:generate": "npx prisma generate",
     "db:reset": "npx prisma migrate reset",
-    "db:studio": "npx prisma studio"
+    "db:studio": "npx prisma studio",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:cov": "vitest run --coverage"
   },
   "keywords": [],
   "author": "",
@@ -47,9 +50,13 @@
     "@types/morgan": "^1.9.10",
     "@types/node": "^25.6.0",
     "@types/pg": "^8.20.0",
+    "@types/supertest": "^7.2.1",
+    "@vitest/coverage-v8": "^4.1.10",
     "nodemon": "^3.1.14",
     "prisma": "^7.8.0",
+    "supertest": "^7.2.2",
     "ts-node": "^10.9.2",
-    "typescript": "^6.0.2"
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.10"
   }
 }

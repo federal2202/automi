@@ -25,6 +25,16 @@ api.interceptors.response.use(
             return Promise.reject(error);
         }
 
+        // reauth_required means the user's Google grant is gone (revoked
+        // access, insufficient scopes) — our own JWT is fine, so refreshing
+        // it here would just waste a round trip and hit the same error again.
+        // Let it propagate straight to the caller (services/calendar/errors.ts
+        // maps it to a distinct REAUTH_REQUIRED type).
+        const data = error.response?.data as { error?: string } | undefined;
+        if (data?.error === 'reauth_required') {
+            return Promise.reject(error);
+        }
+
         original._retry = true;
 
         try {

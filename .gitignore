@@ -38,6 +38,10 @@ yarn-error.log*
 # Coverage / test
 coverage/
 
+# Python (ai-service)
+__pycache__/
+*.pyc
+
 # Vercel
 .vercel
 

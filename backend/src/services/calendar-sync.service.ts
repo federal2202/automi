@@ -65,7 +65,7 @@ function canonicalSchedule(schedule: ScheduleEntry[]): string {
 }
 
 /** Returns the JS day-of-week index (0=Sun…6=Sat) for a Date in a given tz. */
-function localDayOfWeek(utcDate: Date, timezone: string): number {
+export function localDayOfWeek(utcDate: Date, timezone: string): number {
   // Build a Date in the user's tz by reading a formatted string.
   const formatter = new Intl.DateTimeFormat("en-US", {
     timeZone: timezone,
@@ -98,7 +98,7 @@ function* iterateDays(startUTC: Date, endUTC: Date): Generator<Date> {
  * Strategy: build a local-time string "YYYY-MM-DDTHH:MM:00" using the date
  * portion in the user's tz, then use fromZonedTime to convert to UTC.
  */
-function wallClockToUTC(dayUTC: Date, time: string, timezone: string): string {
+export function wallClockToUTC(dayUTC: Date, time: string, timezone: string): string {
   // Get the local YYYY-MM-DD for this UTC midnight in the user's tz.
   const localDateStr = new Intl.DateTimeFormat("en-CA", {
     timeZone: timezone,
@@ -116,7 +116,7 @@ function wallClockToUTC(dayUTC: Date, time: string, timezone: string): string {
  * Returns UTC midnight of the calendar day that contains `date` in `timezone`.
  * Used as the dedupe key stored in SyncedEvent.date.
  */
-function utcMidnightForLocalDay(date: Date, timezone: string): Date {
+export function utcMidnightForLocalDay(date: Date, timezone: string): Date {
   const localDateStr = new Intl.DateTimeFormat("en-CA", {
     timeZone: timezone,
     year: "numeric",
@@ -149,7 +149,7 @@ export async function generateEventsForActivity(
   }
 
   const timezone = user.timezone;
-  const calEvents = buildCalendarClient(user);
+  const calEvents = buildCalendarClient(user).events;
 
   // Start from max(period.startDate, today in user's tz).
   const todayUtcMidnight = utcMidnightForLocalDay(new Date(), timezone);
@@ -237,7 +237,7 @@ export async function deleteEventsForActivity(
 
   if (syncedRows.length === 0) return result;
 
-  const calEvents = buildCalendarClient(user);
+  const calEvents = buildCalendarClient(user).events;
   const limit = pLimit(CONCURRENCY);
 
   const tasks = syncedRows.map((row) =>
@@ -304,7 +304,7 @@ export async function updateEventsForActivity(
     }
 
     const timezone = user.timezone;
-    const calEvents = buildCalendarClient(user);
+    const calEvents = buildCalendarClient(user).events;
     const newSchedule = getSchedule(newActivity);
 
     const syncedRows = await prisma.syncedEvent.findMany({
@@ -395,7 +395,7 @@ export async function syncPeriodDateRange(
   }
 
   const timezone = user.timezone;
-  const calEvents = buildCalendarClient(user);
+  const calEvents = buildCalendarClient(user).events;
   const todayUtcMidnight = utcMidnightForLocalDay(new Date(), timezone);
 
   const activities = await prisma.recurringActivity.findMany({

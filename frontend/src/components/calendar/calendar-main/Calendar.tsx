@@ -77,6 +77,7 @@ export const Calendar = memo(
           foregroundColor: cal.foregroundColor,
         }))}
         showError={Boolean(error) && !isUsingGoogleCalendar}
+        reauthRequired={error?.type === 'REAUTH_REQUIRED'}
         staggerMap={staggerMap}
         isDeleteDialogOpen={isDeleteDialogOpen}
         eventToDelete={eventToDelete}

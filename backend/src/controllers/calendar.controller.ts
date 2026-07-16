@@ -1,25 +1,48 @@
 import type { Response } from "express";
 import { AuthRequest } from "../types/auth";
-import { createCalendarClient } from "../utils/googleAuth";
+import { buildCalendarClient } from "../lib/google-calendar";
 import { publishTaskCreated } from "../services/kafka.service";
 import { prisma } from "../lib/prisma";
 import { Logger } from "../middleware/logger";
 import { Prisma } from "../../generated/prisma/client";
+import { requireParam } from "../utils/request-validation";
 
-const isInsufficientScopesError = (error: unknown): boolean => {
+/**
+ * True when Google is telling us the stored credentials can't be used and the
+ * user needs to go through OAuth again — as opposed to a transient failure.
+ * Two distinct causes collapse into the same reauth_required response:
+ *  - insufficient scopes granted at consent time (user under-authorized)
+ *  - a revoked/expired refresh token (user revoked app access in their
+ *    Google account, changed password, etc.) — this previously fell through
+ *    to a generic 500 "Failed to fetch calendars" because only the scopes
+ *    case was checked. A calendar app WILL see this in practice.
+ */
+const reauthReason = (error: unknown): "insufficient_scopes" | "invalid_grant" | null => {
   const err = error as Record<string, unknown> | null;
-  if (!err) return false;
-  if (err.code === 403 && /insufficient/i.test(String(err.message ?? ''))) return true;
+  if (!err) return null;
+
+  if (err.code === 403 && /insufficient/i.test(String(err.message ?? ''))) {
+    return "insufficient_scopes";
+  }
   const cause = err.cause as Record<string, unknown> | undefined;
-  if (cause?.status === 'PERMISSION_DENIED') return true;
-  return false;
+  if (cause?.status === 'PERMISSION_DENIED') return "insufficient_scopes";
+
+  // googleapis surfaces a failed token refresh as a GaxiosError with the
+  // OAuth error code nested in response.data.
+  const response = err.response as Record<string, unknown> | undefined;
+  const data = response?.data as Record<string, unknown> | undefined;
+  if (data?.error === 'invalid_grant' || data?.error === 'invalid_token') {
+    return "invalid_grant";
+  }
+
+  return null;
 };
 
 export const getCalendars = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     Logger.info('Fetching user calendars', { userId: req.user!.id });
 
-    const calendar = await createCalendarClient(req.user!);
+    const calendar = buildCalendarClient(req.user!);
     Logger.apiCall('Google Calendar', 'calendarList.list');
 
     const calendars = await calendar.calendarList.list();
@@ -32,8 +55,9 @@ export const getCalendars = async (req: AuthRequest, res: Response): Promise<voi
     res.json(calendars.data);
   } catch (error) {
     Logger.error('Error fetching calendars', { userId: req.user!.id, error });
-    if (isInsufficientScopesError(error)) {
-      res.status(401).json({ error: 'reauth_required', reason: 'insufficient_scopes' });
+    const reason = reauthReason(error);
+    if (reason) {
+      res.status(401).json({ error: 'reauth_required', reason });
       return;
     }
     res.status(500).json({ error: 'Failed to fetch calendars' });
@@ -51,7 +75,7 @@ export const getEvents = async (req: AuthRequest, res: Response): Promise<void> 
   });
 
   try {
-    const calendar = await createCalendarClient(req.user!);
+    const calendar = buildCalendarClient(req.user!);
 
     const eventParams = {
       calendarId: calendarId as string,
@@ -74,8 +98,9 @@ export const getEvents = async (req: AuthRequest, res: Response): Promise<void> 
     res.json(events.data);
   } catch (error) {
     Logger.error('Events fetch error', { userId: req.user!.id, calendarId, error });
-    if (isInsufficientScopesError(error)) {
-      res.status(401).json({ error: 'reauth_required', reason: 'insufficient_scopes' });
+    const reason = reauthReason(error);
+    if (reason) {
+      res.status(401).json({ error: 'reauth_required', reason });
       return;
     }
     res.status(500).json({ error: 'Failed to fetch events' });
@@ -92,7 +117,7 @@ export const createEvent = async (req: AuthRequest, res: Response): Promise<void
   });
 
   try {
-    const calendar = await createCalendarClient(req.user!);
+    const calendar = buildCalendarClient(req.user!);
 
     Logger.apiCall("Google Calendar", "events.insert", { calendarId, eventData });
 
@@ -114,9 +139,7 @@ export const createEvent = async (req: AuthRequest, res: Response): Promise<void
 
     const eventTitle = (event.data as Record<string, unknown>).summary as string | undefined;
 
-    let task = null;
-    let taskError: string | null = null;
-
+    let task;
     try {
       task = await prisma.task.create({
         data: {
@@ -132,7 +155,14 @@ export const createEvent = async (req: AuthRequest, res: Response): Promise<void
           aiStatus: "pending",
         },
       });
+    } catch (error) {
+      Logger.error("Task creation failed", { error });
+      res.status(201).json({ ...event.data, task: null, taskError: "Task could not be created" });
+      return;
+    }
 
+    let taskError: string | null = null;
+    try {
       await publishTaskCreated({
         taskId: task.id,
         eventId: event.data.id!,
@@ -146,15 +176,27 @@ export const createEvent = async (req: AuthRequest, res: Response): Promise<void
         taskId: task.id,
       });
     } catch (error) {
-      Logger.error("Task creation or Kafka publish failed", { error });
-      taskError = "Task could not be created";
+      // The task row exists but no worker will ever pick it up, so mark it
+      // 'failed' — otherwise the UI spins forever on a task that never enriches
+      // (BUG-9).
+      Logger.error("Kafka publish failed; marking task failed", { error });
+      taskError = "Task could not be queued for AI processing";
+      try {
+        task = await prisma.task.update({
+          where: { id: task.id },
+          data: { aiStatus: "failed" },
+        });
+      } catch (updateError) {
+        Logger.error("Failed to mark task as failed", { updateError });
+      }
     }
 
     res.status(201).json({ ...event.data, task, taskError });
   } catch (error) {
     Logger.error("Event creation error", { userId: req.user!.id, calendarId, error });
-    if (isInsufficientScopesError(error)) {
-      res.status(401).json({ error: 'reauth_required', reason: 'insufficient_scopes' });
+    const reason = reauthReason(error);
+    if (reason) {
+      res.status(401).json({ error: 'reauth_required', reason });
       return;
     }
     res.status(500).json({ error: "Failed to create event" });
@@ -162,29 +204,30 @@ export const createEvent = async (req: AuthRequest, res: Response): Promise<void
 };
 
 export const updateEvent = async (req: AuthRequest, res: Response): Promise<void> => {
-  const { eventId } = req.params;
+  const eventId = requireParam(req.params.eventId, "eventId");
   const { calendarId = 'primary', ...eventData } = req.body;
 
   Logger.info('Updating calendar event', { userId: req.user!.id, calendarId, eventId });
 
   try {
-    const calendar = await createCalendarClient(req.user!);
+    const calendar = buildCalendarClient(req.user!);
 
     Logger.apiCall('Google Calendar', 'events.update', { calendarId, eventId, eventData });
 
     const event = await calendar.events.update({
       calendarId: calendarId as string,
-      eventId: eventId,
-      requestBody: eventData
-    } as any);
+      eventId,
+      requestBody: eventData,
+    });
 
     Logger.info('Calendar event updated successfully', { userId: req.user!.id, calendarId, eventId });
 
     res.json(event.data);
   } catch (error) {
     Logger.error('Event update error', { userId: req.user!.id, calendarId, eventId, error });
-    if (isInsufficientScopesError(error)) {
-      res.status(401).json({ error: 'reauth_required', reason: 'insufficient_scopes' });
+    const reason = reauthReason(error);
+    if (reason) {
+      res.status(401).json({ error: 'reauth_required', reason });
       return;
     }
     res.status(500).json({ error: 'Failed to update event' });
@@ -192,28 +235,29 @@ export const updateEvent = async (req: AuthRequest, res: Response): Promise<void
 };
 
 export const deleteEvent = async (req: AuthRequest, res: Response): Promise<void> => {
-  const { eventId } = req.params;
+  const eventId = requireParam(req.params.eventId, "eventId");
   const { calendarId = 'primary' } = req.query;
 
   Logger.info('Deleting calendar event', { userId: req.user!.id, calendarId, eventId });
 
   try {
-    const calendar = await createCalendarClient(req.user!);
+    const calendar = buildCalendarClient(req.user!);
 
     Logger.apiCall('Google Calendar', 'events.delete', { calendarId, eventId });
 
     await calendar.events.delete({
       calendarId: calendarId as string,
-      eventId: eventId
-    } as any);
+      eventId,
+    });
 
     Logger.info('Calendar event deleted successfully', { userId: req.user!.id, calendarId, eventId });
 
     res.status(204).send();
   } catch (error) {
     Logger.error('Event deletion error', { userId: req.user!.id, calendarId, eventId, error });
-    if (isInsufficientScopesError(error)) {
-      res.status(401).json({ error: 'reauth_required', reason: 'insufficient_scopes' });
+    const reason = reauthReason(error);
+    if (reason) {
+      res.status(401).json({ error: 'reauth_required', reason });
       return;
     }
     res.status(500).json({ error: 'Failed to delete event' });

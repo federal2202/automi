@@ -24,6 +24,7 @@ interface CalendarShellProps {
   events: CalendarEvent[]
   calendars: ToolbarCalendar[]
   showError: boolean
+  reauthRequired?: boolean
   staggerMap: Map<string, number> | null
   isDeleteDialogOpen: boolean
   eventToDelete: CalendarEvent | null
@@ -44,6 +45,7 @@ export function CalendarShell({
   events,
   calendars,
   showError,
+  reauthRequired,
   staggerMap,
   isDeleteDialogOpen,
   eventToDelete,
@@ -60,7 +62,7 @@ export function CalendarShell({
         className
       )}
     >
-      {showError && <CalendarErrorBanner onRetry={onRetry} />}
+      {showError && <CalendarErrorBanner onRetry={onRetry} reauthRequired={reauthRequired} />}
 
       <CalendarToolbar
         currentDate={currentDate}

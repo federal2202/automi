@@ -17,13 +17,22 @@ import { prisma } from "./prisma";
  * Builds an OAuth2Client pre-loaded with the user's stored credentials and
  * wires a token-refresh listener that persists the new access token back to
  * the database automatically.
+ *
+ * Returns the full `calendar_v3.Calendar` client (not just `.events`) so
+ * every Calendar resource (`.events`, `.calendarList`, ...) shares this one
+ * auth-and-refresh setup. This used to be duplicated: this file only built
+ * `.events` for calendar-sync.service.ts, while calendar.controller.ts had
+ * its own separate implementation (utils/googleAuth.ts) with a manual
+ * expiry pre-check to get at `.calendarList`. Two competing ways to build
+ * "an authenticated Calendar client for a user" is exactly the kind of
+ * duplication that should not survive a review — consolidated here.
  */
 export function buildCalendarClient(user: {
   id: string;
   accessToken: string;
   refreshToken: string;
   expiresAt: Date;
-}): calendar_v3.Resource$Events {
+}): calendar_v3.Calendar {
   const oauth2Client = new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET,
@@ -36,6 +45,8 @@ export function buildCalendarClient(user: {
     expiry_date: user.expiresAt.getTime(),
   });
 
+  // No manual expiry check needed: OAuth2Client already checks expiry_date
+  // before every request and refreshes automatically, emitting 'tokens'.
   // Persist refreshed tokens back to DB so subsequent requests don't need to
   // re-fetch them from Google.
   oauth2Client.on("tokens", async (tokens) => {
@@ -53,6 +64,5 @@ export function buildCalendarClient(user: {
     }
   });
 
-  const calendar = google.calendar({ version: "v3", auth: oauth2Client });
-  return calendar.events;
+  return google.calendar({ version: "v3", auth: oauth2Client });
 }

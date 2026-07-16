@@ -17,7 +17,22 @@ export const handleCalendarServiceError = (error: unknown): CalendarServiceError
     const axiosError = error as {
       response?: {
         status?: number
-        data?: GoogleCalendarError
+        data?: GoogleCalendarError & { error?: string; reason?: string }
+      }
+    }
+
+    // Backend-specific shape (calendar.controller.ts's reauthReason): the
+    // user's Google grant is gone (revoked access, insufficient scopes) — no
+    // amount of retrying or refreshing our own JWT fixes this, the user has
+    // to go through Google OAuth again. Must be checked before the generic
+    // 401 branch below, which would otherwise swallow it as a plain
+    // "sign in to automi" auth error.
+    if (axiosError.response?.status === 401 && axiosError.response.data?.error === 'reauth_required') {
+      return {
+        type: 'REAUTH_REQUIRED',
+        message: 'Your Google Calendar access needs to be reconnected.',
+        originalError: error,
+        statusCode: 401
       }
     }
 

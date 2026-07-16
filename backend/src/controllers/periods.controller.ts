@@ -22,7 +22,7 @@ interface ParsedPeriod {
 
 const ALLOWED_KEYS = ["title", "startDate", "endDate"] as const;
 
-const parseAndValidatePeriod = (
+export const parseAndValidatePeriod = (
   body: PeriodInput,
 ): { ok: true; value: ParsedPeriod } | { ok: false; error: string } => {
   const { title, startDate, endDate } = body ?? {};
