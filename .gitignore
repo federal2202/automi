@@ -48,3 +48,4 @@ __pycache__/
 # Markdown docs (kept local only, not tracked in the repo)
 *.md
 *.markdown
+!/README.md
